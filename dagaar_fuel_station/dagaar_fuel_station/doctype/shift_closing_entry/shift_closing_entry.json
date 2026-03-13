@@ -1,0 +1,214 @@
+{
+  "doctype": "DocType",
+  "name": "Shift Closing Entry",
+  "module": "Dagaar Fuel Station",
+  "custom": 0,
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "label": "Naming Series",
+      "fieldtype": "Select",
+      "options": "SCE-.YYYY.-",
+      "default": "SCE-.YYYY.-",
+      "reqd": 1
+    },
+    {
+      "fieldname": "date",
+      "label": "Date",
+      "fieldtype": "Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "posting_time",
+      "label": "Posting Time",
+      "fieldtype": "Time"
+    },
+    {
+      "fieldname": "shift",
+      "label": "Shift",
+      "fieldtype": "Select",
+      "options": "Morning\nEvening\nNight",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "company",
+      "label": "Company",
+      "fieldtype": "Link",
+      "options": "Company",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "pos_profile",
+      "label": "Station / POS Profile",
+      "fieldtype": "Link",
+      "options": "POS Profile",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "attendant",
+      "label": "Attendant",
+      "fieldtype": "Link",
+      "options": "Employee",
+      "reqd": 1
+    },
+    {
+      "fieldname": "currency",
+      "label": "Currency",
+      "fieldtype": "Link",
+      "options": "Currency"
+    },
+    {
+      "fieldname": "opening_cash_float",
+      "label": "Opening Cash Float",
+      "fieldtype": "Currency",
+      "options": "currency"
+    },
+    {
+      "fieldname": "actual_cash_on_hand",
+      "label": "Actual Cash On Hand",
+      "fieldtype": "Currency",
+      "options": "currency"
+    },
+    {
+      "fieldname": "expected_cash_amount",
+      "label": "Expected Cash Amount",
+      "fieldtype": "Currency",
+      "options": "currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cash_over_short",
+      "label": "Cash Over / Short",
+      "fieldtype": "Currency",
+      "options": "currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "remarks",
+      "label": "Remarks",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "section_totals",
+      "label": "Totals",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "total_metered_qty",
+      "label": "Total Metered Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "total_net_billable_qty",
+      "label": "Total Net Billable Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "total_gross_amount",
+      "label": "Total Gross Amount",
+      "fieldtype": "Currency",
+      "options": "currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "total_net_billable_amount",
+      "label": "Total Net Billable Amount",
+      "fieldtype": "Currency",
+      "options": "currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_lines",
+      "label": "Nozzle Closing Readings",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "lines",
+      "label": "Lines",
+      "fieldtype": "Table",
+      "options": "Shift Closing Line",
+      "reqd": 1
+    }
+  ],
+  "field_order": [
+    "naming_series",
+    "date",
+    "posting_time",
+    "shift",
+    "company",
+    "pos_profile",
+    "attendant",
+    "currency",
+    "opening_cash_float",
+    "actual_cash_on_hand",
+    "expected_cash_amount",
+    "cash_over_short",
+    "remarks",
+    "section_totals",
+    "total_metered_qty",
+    "total_net_billable_qty",
+    "total_gross_amount",
+    "total_net_billable_amount",
+    "section_lines",
+    "lines"
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1,
+      "report": 1,
+      "export": 1,
+      "print": 1
+    },
+    {
+      "role": "Sales Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1,
+      "report": 1,
+      "print": 1
+    },
+    {
+      "role": "Sales User",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "report": 1,
+      "print": 1
+    },
+    {
+      "role": "Accounts User",
+      "read": 1,
+      "report": 1,
+      "print": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "istable": 0,
+  "issingle": 0,
+  "editable_grid": 1,
+  "is_submittable": 1,
+  "quick_entry": 0,
+  "title_field": "date",
+  "search_fields": "date,shift,attendant,pos_profile"
+}

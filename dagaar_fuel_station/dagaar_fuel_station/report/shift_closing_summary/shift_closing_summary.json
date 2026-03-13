@@ -1,0 +1,26 @@
+{
+  "doctype": "Report",
+  "name": "Shift Closing Summary",
+  "report_name": "Shift Closing Summary",
+  "ref_doctype": "Shift Closing Entry",
+  "report_type": "Script Report",
+  "module": "Dagaar Fuel Station",
+  "is_standard": "Yes",
+  "roles": [
+    {
+      "role": "System Manager"
+    },
+    {
+      "role": "Accounts Manager"
+    },
+    {
+      "role": "Accounts User"
+    },
+    {
+      "role": "Sales Manager"
+    },
+    {
+      "role": "Sales User"
+    }
+  ]
+}

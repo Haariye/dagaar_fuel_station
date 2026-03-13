@@ -1,0 +1,10 @@
+{
+  "doctype": "Report",
+  "name": "Fuel Station Daily Summary",
+  "module": "Dagaar Fuel Station",
+  "report_name": "Fuel Station Daily Summary",
+  "ref_doctype": "Pump Reading Entry",
+  "report_type": "Script Report",
+  "is_standard": "Yes",
+  "json": "{}"
+}

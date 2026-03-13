@@ -1,0 +1,78 @@
+{
+  "doctype": "DocType",
+  "name": "Fuel Station Settings",
+  "module": "Dagaar Fuel Station",
+  "custom": 0,
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "cash_customer",
+      "label": "Default Cash Customer",
+      "fieldtype": "Link",
+      "options": "Customer",
+      "reqd": 1
+    },
+    {
+      "fieldname": "default_cash_mode_of_payment",
+      "label": "Default Cash Mode of Payment",
+      "fieldtype": "Link",
+      "options": "Mode of Payment"
+    },
+    {
+      "fieldname": "auto_submit_sales_invoices",
+      "label": "Auto Submit Sales Invoices",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "default_update_stock",
+      "label": "Update Stock on Sales Invoice",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "allow_cash_row_manual_customer",
+      "label": "Allow Manual Customer on Cash Rows",
+      "fieldtype": "Check"
+    },
+    {
+      "fieldname": "default_shift_options",
+      "label": "Shift Options",
+      "fieldtype": "Small Text",
+      "default": "Morning\nEvening\nNight"
+    },
+    {
+      "fieldname": "dashboard_refresh_minutes",
+      "label": "Dashboard Refresh Minutes",
+      "fieldtype": "Int",
+      "default": "5"
+    }
+  ],
+  "field_order": [
+    "cash_customer",
+    "default_cash_mode_of_payment",
+    "auto_submit_sales_invoices",
+    "default_update_stock",
+    "allow_cash_row_manual_customer",
+    "default_shift_options",
+    "dashboard_refresh_minutes"
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "print": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "istable": 0,
+  "issingle": 1,
+  "editable_grid": 0,
+  "is_submittable": 0,
+  "quick_entry": 0
+}

@@ -1,0 +1,21 @@
+{
+  "doctype": "Page",
+  "name": "fuel-station-dashboard",
+  "module": "Dagaar Fuel Station",
+  "title": "Fuel Station Dashboard",
+  "standard": "Yes",
+  "roles": [
+    {
+      "role": "System Manager"
+    },
+    {
+      "role": "Accounts Manager"
+    },
+    {
+      "role": "Sales Manager"
+    },
+    {
+      "role": "Sales User"
+    }
+  ]
+}

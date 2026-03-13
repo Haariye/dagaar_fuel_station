@@ -1,0 +1,127 @@
+{
+  "doctype": "DocType",
+  "name": "Pump Reading Cash Summary",
+  "module": "Dagaar Fuel Station",
+  "custom": 0,
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "source_shift_closing_line",
+      "label": "Source Shift Closing Line",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "fuel_pump",
+      "label": "Fuel Pump",
+      "fieldtype": "Link",
+      "options": "Fuel Pump",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "fuel_nozzle",
+      "label": "Fuel Nozzle",
+      "fieldtype": "Link",
+      "options": "Fuel Nozzle",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "item",
+      "label": "Item",
+      "fieldtype": "Link",
+      "options": "Item",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "cash_customer",
+      "label": "Cash Customer",
+      "fieldtype": "Link",
+      "options": "Customer",
+      "read_only": 1
+    },
+    {
+      "fieldname": "billable_qty",
+      "label": "Billable Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "credit_qty",
+      "label": "Credit Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cash_qty",
+      "label": "Cash Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "rate",
+      "label": "Rate",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cash_amount",
+      "label": "Cash Amount",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "adjustment_qty",
+      "label": "Adjustment Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "adjustment_amount",
+      "label": "Adjustment Amount",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "net_balance_qty",
+      "label": "Net Balance Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "net_balance_amount",
+      "label": "Net Balance Amount",
+      "fieldtype": "Currency",
+      "read_only": 1
+    }
+  ],
+  "field_order": [
+    "source_shift_closing_line",
+    "fuel_pump",
+    "fuel_nozzle",
+    "item",
+    "cash_customer",
+    "billable_qty",
+    "credit_qty",
+    "cash_qty",
+    "rate",
+    "cash_amount",
+    "adjustment_qty",
+    "adjustment_amount",
+    "net_balance_qty",
+    "net_balance_amount"
+  ],
+  "istable": 1,
+  "issingle": 0,
+  "editable_grid": 1,
+  "quick_entry": 0
+}

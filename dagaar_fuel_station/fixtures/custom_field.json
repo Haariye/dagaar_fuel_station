@@ -1,0 +1,145 @@
+[
+  {
+    "name": "Sales Invoice-pump_reading_entry",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "pump_reading_entry",
+    "label": "Pump Reading Entry",
+    "fieldtype": "Link",
+    "options": "Pump Reading Entry",
+    "insert_after": "remarks",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice-shift_closing_entry",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "shift_closing_entry",
+    "label": "Shift Closing Entry",
+    "fieldtype": "Link",
+    "options": "Shift Closing Entry",
+    "insert_after": "pump_reading_entry",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice-fuel_pump",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "fuel_pump",
+    "label": "Fuel Pump",
+    "fieldtype": "Data",
+    "insert_after": "shift_closing_entry",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice-fuel_nozzle",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "fuel_nozzle",
+    "label": "Fuel Nozzle",
+    "fieldtype": "Data",
+    "insert_after": "fuel_pump",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice-pos_profile_link",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "pos_profile_link",
+    "label": "POS Profile",
+    "fieldtype": "Link",
+    "options": "POS Profile",
+    "insert_after": "fuel_nozzle",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice-fuel_station_date",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice",
+    "fieldname": "fuel_station_date",
+    "label": "Fuel Station Date",
+    "fieldtype": "Date",
+    "insert_after": "pos_profile_link",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-source_pump_reading_line",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "source_pump_reading_line",
+    "label": "Source Pump Reading Line",
+    "fieldtype": "Data",
+    "insert_after": "description",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-source_shift_closing_line",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "source_shift_closing_line",
+    "label": "Source Shift Closing Line",
+    "fieldtype": "Data",
+    "insert_after": "source_pump_reading_line",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-opening_meter_reading",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "opening_meter_reading",
+    "label": "Opening Meter Reading",
+    "fieldtype": "Float",
+    "insert_after": "source_shift_closing_line",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-closing_meter_reading",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "closing_meter_reading",
+    "label": "Closing Meter Reading",
+    "fieldtype": "Float",
+    "insert_after": "opening_meter_reading",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-metered_qty",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "metered_qty",
+    "label": "Metered Qty",
+    "fieldtype": "Float",
+    "insert_after": "closing_meter_reading",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-allocated_qty",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "allocated_qty",
+    "label": "Allocated Qty",
+    "fieldtype": "Float",
+    "insert_after": "metered_qty",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-fuel_pump",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "fuel_pump",
+    "label": "Fuel Pump",
+    "fieldtype": "Data",
+    "insert_after": "allocated_qty",
+    "read_only": 1
+  },
+  {
+    "name": "Sales Invoice Item-fuel_nozzle",
+    "doctype": "Custom Field",
+    "dt": "Sales Invoice Item",
+    "fieldname": "fuel_nozzle",
+    "label": "Fuel Nozzle",
+    "fieldtype": "Data",
+    "insert_after": "fuel_pump",
+    "read_only": 1
+  }
+]

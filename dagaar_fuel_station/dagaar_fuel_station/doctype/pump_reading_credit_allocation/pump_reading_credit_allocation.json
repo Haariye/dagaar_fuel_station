@@ -1,0 +1,97 @@
+{
+  "doctype": "DocType",
+  "name": "Pump Reading Credit Allocation",
+  "module": "Dagaar Fuel Station",
+  "custom": 0,
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "source_shift_closing_line",
+      "label": "Source Shift Closing Line",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "fuel_pump",
+      "label": "Fuel Pump",
+      "fieldtype": "Link",
+      "options": "Fuel Pump",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "fuel_nozzle",
+      "label": "Fuel Nozzle",
+      "fieldtype": "Link",
+      "options": "Fuel Nozzle",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "item",
+      "label": "Item",
+      "fieldtype": "Link",
+      "options": "Item",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "customer",
+      "label": "Customer",
+      "fieldtype": "Link",
+      "options": "Customer",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "qty",
+      "label": "Qty / Litres",
+      "fieldtype": "Float",
+      "precision": "3",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "uom",
+      "label": "UOM",
+      "fieldtype": "Link",
+      "options": "UOM",
+      "read_only": 1
+    },
+    {
+      "fieldname": "rate",
+      "label": "Rate",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "amount",
+      "label": "Amount",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notes",
+      "label": "Notes",
+      "fieldtype": "Small Text"
+    }
+  ],
+  "field_order": [
+    "source_shift_closing_line",
+    "fuel_pump",
+    "fuel_nozzle",
+    "item",
+    "customer",
+    "qty",
+    "uom",
+    "rate",
+    "amount",
+    "notes"
+  ],
+  "istable": 1,
+  "issingle": 0,
+  "editable_grid": 1,
+  "quick_entry": 0
+}

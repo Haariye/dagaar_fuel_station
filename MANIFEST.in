@@ -1,0 +1,6 @@
+include *.md
+include *.txt
+include *.json
+recursive-include dagaar_fuel_station *.json *.js *.py *.css *.html *.csv *.txt
+recursive-include dagaar_fuel_station/public *
+recursive-include dagaar_fuel_station/fixtures *.json

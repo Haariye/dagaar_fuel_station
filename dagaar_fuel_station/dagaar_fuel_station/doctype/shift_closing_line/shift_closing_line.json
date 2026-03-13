@@ -1,0 +1,147 @@
+{
+  "doctype": "DocType",
+  "name": "Shift Closing Line",
+  "module": "Dagaar Fuel Station",
+  "custom": 0,
+  "engine": "InnoDB",
+  "track_changes": 1,
+  "fields": [
+    {
+      "fieldname": "fuel_pump",
+      "label": "Fuel Pump",
+      "fieldtype": "Link",
+      "options": "Fuel Pump",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "fuel_nozzle",
+      "label": "Fuel Nozzle",
+      "fieldtype": "Link",
+      "options": "Fuel Nozzle",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "item",
+      "label": "Item",
+      "fieldtype": "Link",
+      "options": "Item",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "uom",
+      "label": "UOM",
+      "fieldtype": "Link",
+      "options": "UOM",
+      "read_only": 1
+    },
+    {
+      "fieldname": "warehouse",
+      "label": "Warehouse",
+      "fieldtype": "Link",
+      "options": "Warehouse",
+      "read_only": 1
+    },
+    {
+      "fieldname": "opening_reading",
+      "label": "Opening Reading",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "closing_reading",
+      "label": "Closing Reading",
+      "fieldtype": "Float",
+      "precision": "3",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "metered_qty",
+      "label": "Metered Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "test_qty",
+      "label": "Test Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "default": "0"
+    },
+    {
+      "fieldname": "calibration_qty",
+      "label": "Calibration Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "default": "0"
+    },
+    {
+      "fieldname": "adjustment_qty",
+      "label": "Adjustment Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "default": "0"
+    },
+    {
+      "fieldname": "net_billable_qty",
+      "label": "Net Billable Qty",
+      "fieldtype": "Float",
+      "precision": "3",
+      "read_only": 1
+    },
+    {
+      "fieldname": "rate",
+      "label": "Rate",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "gross_amount",
+      "label": "Gross Amount",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "net_billable_amount",
+      "label": "Net Billable Amount",
+      "fieldtype": "Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "notes",
+      "label": "Notes",
+      "fieldtype": "Small Text"
+    }
+  ],
+  "field_order": [
+    "fuel_pump",
+    "fuel_nozzle",
+    "item",
+    "uom",
+    "warehouse",
+    "opening_reading",
+    "closing_reading",
+    "metered_qty",
+    "test_qty",
+    "calibration_qty",
+    "adjustment_qty",
+    "net_billable_qty",
+    "rate",
+    "gross_amount",
+    "net_billable_amount",
+    "notes"
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "istable": 1,
+  "issingle": 0,
+  "editable_grid": 1,
+  "is_submittable": 0,
+  "quick_entry": 0
+}
