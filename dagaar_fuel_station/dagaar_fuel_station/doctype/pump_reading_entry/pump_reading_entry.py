@@ -12,27 +12,22 @@ from dagaar_fuel_station.dagaar_fuel_station.utils import (
 )
 
 
-
-
 @frappe.whitelist()
-def get_nozzle_defaults(nozzle, pos_profile=None):
+def get_nozzle_defaults(nozzle=None, pos_profile=None):
     if not nozzle:
         return {}
-    nozzle_doc = frappe.get_doc("Fuel Nozzle", nozzle)
-    price_list = get_pos_price_list(pos_profile or nozzle_doc.pos_profile)
+    nozzle_doc = frappe.get_cached_doc("Fuel Nozzle", nozzle)
+    rate = get_item_rate(nozzle_doc.item, get_pos_price_list(pos_profile), nozzle_doc.uom)
     return {
-        "fuel_pump": nozzle_doc.fuel_pump,
-        "item": nozzle_doc.item,
-        "uom": nozzle_doc.uom,
-        "warehouse": nozzle_doc.warehouse,
         "opening_reading": get_last_nozzle_closing(nozzle),
-        "rate": get_item_rate(
-            nozzle_doc.item,
-            price_list,
-            uom=nozzle_doc.uom,
-            posting_date=nowdate(),
-        ),
+        "rate": rate,
+        "item": nozzle_doc.item,
+        "warehouse": nozzle_doc.warehouse,
+        "uom": nozzle_doc.uom,
+        "fuel_pump": nozzle_doc.fuel_pump,
+        "display_name": nozzle_doc.nozzle_code or nozzle_doc.name,
     }
+
 
 @frappe.whitelist()
 def get_shift_closing_snapshots(shift_closing_entry):
@@ -60,6 +55,45 @@ def get_shift_closing_snapshots(shift_closing_entry):
     ]
 
 
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_shift_closing_line_query(doctype, txt, searchfield, start, page_len, filters):
+    shift_closing_entry = (filters or {}).get("shift_closing_entry")
+    if not shift_closing_entry:
+        return []
+
+    txt = f"%{txt or ''}%"
+    return frappe.db.sql(
+        """
+        select
+            scl.name,
+            coalesce(scl.display_name, scl.fuel_nozzle, scl.name) as display_name,
+            scl.fuel_pump,
+            scl.item
+        from `tabShift Closing Line` scl
+        where scl.parent = %(shift_closing_entry)s
+          and scl.parenttype = 'Shift Closing Entry'
+          and (
+                scl.name like %(txt)s
+                or coalesce(scl.display_name, '') like %(txt)s
+                or coalesce(scl.fuel_nozzle, '') like %(txt)s
+                or coalesce(scl.fuel_pump, '') like %(txt)s
+                or coalesce(scl.item, '') like %(txt)s
+          )
+        order by scl.idx asc
+        limit %(start)s, %(page_len)s
+        """,
+        {
+            "shift_closing_entry": shift_closing_entry,
+            "txt": txt,
+            "start": start,
+            "page_len": page_len,
+        },
+    )
+
+
 class PumpReadingEntry(Document):
     def before_validate(self):
         self.sync_header_from_shift_closing()
@@ -83,6 +117,12 @@ class PumpReadingEntry(Document):
         self.create_sales_invoices()
         self.db_set("invoices_created", 1, update_modified=False)
         self.db_set("status", "Invoiced", update_modified=False)
+        frappe.db.set_value(
+            "Shift Closing Entry",
+            self.shift_closing_entry,
+            {"status": "Closed", "pump_reading_entry": self.name},
+            update_modified=False,
+        )
 
     def on_cancel(self):
         submitted = []
@@ -91,6 +131,13 @@ class PumpReadingEntry(Document):
                 submitted.append(row.sales_invoice)
         if submitted:
             frappe.throw(_("Cancel linked Sales Invoices first: {0}").format(", ".join(submitted)))
+        if self.shift_closing_entry and frappe.db.get_value("Shift Closing Entry", self.shift_closing_entry, "pump_reading_entry") == self.name:
+            frappe.db.set_value(
+                "Shift Closing Entry",
+                self.shift_closing_entry,
+                {"status": "Open", "pump_reading_entry": ""},
+                update_modified=False,
+            )
 
     def sync_header_from_shift_closing(self):
         if not self.shift_closing_entry:
@@ -165,6 +212,8 @@ class PumpReadingEntry(Document):
         closing = frappe.get_doc("Shift Closing Entry", self.shift_closing_entry)
         if closing.docstatus != 1:
             frappe.throw(_("Shift Closing Entry must be submitted first."))
+        if closing.status == "Closed" and (closing.pump_reading_entry or "") != (self.name or ""):
+            frappe.throw(_("Shift Closing Entry {0} is already closed in Pump Reading Entry {1}.").format(closing.name, closing.pump_reading_entry))
         for label in ["company", "pos_profile", "shift", "attendant"]:
             if (self.get(label) or "") != (closing.get(label) or ""):
                 frappe.throw(_("{0} does not match linked Shift Closing Entry.").format(label.replace("_", " ").title()))
@@ -188,7 +237,8 @@ class PumpReadingEntry(Document):
         for source, qty in allocated.items():
             billable = flt(snapshot_map[source].billable_qty)
             if qty - billable > 0.0001:
-                frappe.throw(_("Credit qty for source line {0} cannot exceed billable qty {1}.").format(source, billable))
+                label = snapshot_map[source].fuel_nozzle or source
+                frappe.throw(_("Credit qty for source nozzle {0} cannot exceed billable qty {1}.").format(label, billable))
 
     def calculate_cash_summaries(self):
         self.set("cash_summaries", [])
@@ -253,7 +303,6 @@ class PumpReadingEntry(Document):
         if self.invoice_references:
             frappe.throw(_("Invoices already created for this Pump Reading Entry."))
         created = []
-        # credit grouped by customer
         grouped = {}
         for row in self.credit_allocations:
             grouped.setdefault(row.customer, []).append(row)

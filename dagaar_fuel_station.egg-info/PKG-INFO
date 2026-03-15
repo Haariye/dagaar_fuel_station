@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: dagaar_fuel_station
+Version: 0.0.1
+Summary: Advanced fuel station operations and billing for ERPNext
+Author: OpenAI
+Author-email: support@example.com
+Dynamic: author
+Dynamic: author-email
+Dynamic: summary

@@ -1,16 +1,3 @@
-frappe.ui.form.on('Shift Closing Entry', {
-	refresh(frm) {
-		frm.set_query('pos_profile', () => ({ filters: { company: frm.doc.company } }));
-	},
-	company(frm) {
-		if (!frm.doc.currency && frm.doc.company) {
-			frappe.db.get_value('Company', frm.doc.company, 'default_currency').then(r => {
-				if (r.message) frm.set_value('currency', r.message.default_currency);
-			});
-		}
-	}
-});
-
 function update_closing_line(frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
 	const opening = flt(row.opening_reading);
@@ -24,34 +11,83 @@ function update_closing_line(frm, cdt, cdn) {
 	frm.trigger('recompute_totals');
 }
 
-frappe.ui.form.on('Shift Closing Line', {
-	fuel_nozzle(frm, cdt, cdn) {
-		const row = locals[cdt][cdn];
-		if (!row.fuel_nozzle) return;
-		frappe.db.get_doc('Fuel Nozzle', row.fuel_nozzle).then(nozzle => {
-			frappe.model.set_value(cdt, cdn, 'fuel_pump', nozzle.fuel_pump);
-			frappe.model.set_value(cdt, cdn, 'item', nozzle.item);
-			frappe.model.set_value(cdt, cdn, 'uom', nozzle.uom);
-			frappe.model.set_value(cdt, cdn, 'warehouse', nozzle.warehouse);
-		});
-		frappe.call({
-			method: 'dagaar_fuel_station.dagaar_fuel_station.doctype.pump_reading_entry.pump_reading_entry.get_nozzle_defaults',
-			args: { nozzle: row.fuel_nozzle, pos_profile: frm.doc.pos_profile },
-			callback: function(r) {
-				if (!r.message) return;
-				frappe.model.set_value(cdt, cdn, 'opening_reading', r.message.opening_reading || 0);
-				frappe.model.set_value(cdt, cdn, 'rate', r.message.rate || 0);
-				update_closing_line(frm, cdt, cdn);
-			}
-		});
-	},
-	closing_reading: update_closing_line,
-	test_qty: update_closing_line,
-	calibration_qty: update_closing_line,
-	adjustment_qty: update_closing_line
-});
+function apply_nozzle_defaults(frm, cdt, cdn, nozzle_name) {
+	if (!nozzle_name) return;
+	frappe.call({
+		method: 'dagaar_fuel_station.dagaar_fuel_station.doctype.pump_reading_entry.pump_reading_entry.get_nozzle_defaults',
+		args: { nozzle: nozzle_name, pos_profile: frm.doc.pos_profile },
+		callback: function(r) {
+			if (!r.message) return;
+			frappe.model.set_value(cdt, cdn, 'fuel_pump', r.message.fuel_pump || null);
+			frappe.model.set_value(cdt, cdn, 'item', r.message.item || null);
+			frappe.model.set_value(cdt, cdn, 'uom', r.message.uom || null);
+			frappe.model.set_value(cdt, cdn, 'warehouse', r.message.warehouse || null);
+			frappe.model.set_value(cdt, cdn, 'display_name', r.message.display_name || nozzle_name);
+			frappe.model.set_value(cdt, cdn, 'opening_reading', r.message.opening_reading || 0);
+			frappe.model.set_value(cdt, cdn, 'rate', r.message.rate || 0);
+			update_closing_line(frm, cdt, cdn);
+		}
+	});
+}
+
+function load_station_nozzles(frm) {
+	if (!frm.doc.company || !frm.doc.pos_profile || frm.doc.docstatus > 0) return;
+	const existing = (frm.doc.lines || []).map(d => d.fuel_nozzle).filter(Boolean);
+	frappe.call({
+		method: 'dagaar_fuel_station.dagaar_fuel_station.doctype.shift_closing_entry.shift_closing_entry.get_station_nozzles',
+		args: {
+			company: frm.doc.company,
+			pos_profile: frm.doc.pos_profile,
+			existing_nozzles: existing
+		},
+		callback: function(r) {
+			(r.message || []).forEach(d => {
+				const row = frm.add_child('lines');
+				Object.assign(row, d);
+			});
+			frm.refresh_field('lines');
+			frm.trigger('recompute_totals');
+		}
+	});
+}
 
 frappe.ui.form.on('Shift Closing Entry', {
+	setup(frm) {
+		frm.set_query('pos_profile', () => ({ filters: { company: frm.doc.company } }));
+		frm.set_query('fuel_nozzle', 'lines', function(doc, cdt, cdn) {
+			const row = locals[cdt][cdn] || {};
+			const filters = {
+				company: doc.company,
+				pos_profile: doc.pos_profile,
+				active: 1
+			};
+			if (row.fuel_pump) filters.fuel_pump = row.fuel_pump;
+			return { filters };
+		});
+	},
+	refresh(frm) {
+		if (frm.doc.docstatus === 0 && frm.doc.company && frm.doc.pos_profile && !(frm.doc.lines || []).length) {
+			load_station_nozzles(frm);
+		}
+		if (frm.doc.docstatus === 0) {
+			frm.add_custom_button(__('Load Nozzles'), () => load_station_nozzles(frm));
+		}
+	},
+	company(frm) {
+		if (!frm.doc.currency && frm.doc.company) {
+			frappe.db.get_value('Company', frm.doc.company, 'default_currency').then(r => {
+				if (r.message) frm.set_value('currency', r.message.default_currency);
+			});
+		}
+		if (frm.doc.company && frm.doc.pos_profile && !(frm.doc.lines || []).length) {
+			load_station_nozzles(frm);
+		}
+	},
+	pos_profile(frm) {
+		if (frm.doc.company && frm.doc.pos_profile && !(frm.doc.lines || []).length) {
+			load_station_nozzles(frm);
+		}
+	},
 	recompute_totals(frm) {
 		let total_metered_qty = 0, total_net_billable_qty = 0, total_gross_amount = 0, total_net_billable_amount = 0;
 		(frm.doc.lines || []).forEach(d => {
@@ -68,4 +104,27 @@ frappe.ui.form.on('Shift Closing Entry', {
 		frm.set_value('cash_over_short', flt(frm.doc.actual_cash_on_hand) - total_net_billable_amount);
 	},
 	actual_cash_on_hand(frm) { frm.trigger('recompute_totals'); }
+});
+
+frappe.ui.form.on('Shift Closing Line', {
+	fuel_pump(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row.fuel_nozzle) {
+			frappe.db.get_value('Fuel Nozzle', row.fuel_nozzle, 'fuel_pump').then(r => {
+				if (r.message && r.message.fuel_pump !== row.fuel_pump) {
+					frappe.model.set_value(cdt, cdn, 'fuel_nozzle', null);
+					frappe.model.set_value(cdt, cdn, 'display_name', null);
+				}
+			});
+		}
+	},
+	fuel_nozzle(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (!row.fuel_nozzle) return;
+		apply_nozzle_defaults(frm, cdt, cdn, row.fuel_nozzle);
+	},
+	closing_reading: update_closing_line,
+	test_qty: update_closing_line,
+	calibration_qty: update_closing_line,
+	adjustment_qty: update_closing_line
 });

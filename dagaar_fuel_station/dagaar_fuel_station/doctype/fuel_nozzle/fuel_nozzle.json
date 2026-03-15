@@ -1,144 +1,154 @@
 {
-  "doctype": "DocType",
-  "name": "Fuel Nozzle",
-  "module": "Dagaar Fuel Station",
-  "custom": 0,
-  "engine": "InnoDB",
-  "track_changes": 1,
-  "fields": [
-    {
-      "fieldname": "nozzle_code",
-      "label": "Nozzle Code",
-      "fieldtype": "Data",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "fuel_pump",
-      "label": "Fuel Pump",
-      "fieldtype": "Link",
-      "options": "Fuel Pump",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "company",
-      "label": "Company",
-      "fieldtype": "Link",
-      "options": "Company",
-      "reqd": 1
-    },
-    {
-      "fieldname": "pos_profile",
-      "label": "POS Profile",
-      "fieldtype": "Link",
-      "options": "POS Profile",
-      "reqd": 1
-    },
-    {
-      "fieldname": "item",
-      "label": "Fuel Item",
-      "fieldtype": "Link",
-      "options": "Item",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "uom",
-      "label": "UOM",
-      "fieldtype": "Link",
-      "options": "UOM"
-    },
-    {
-      "fieldname": "warehouse",
-      "label": "Warehouse",
-      "fieldtype": "Link",
-      "options": "Warehouse"
-    },
-    {
-      "fieldname": "cost_center",
-      "label": "Cost Center",
-      "fieldtype": "Link",
-      "options": "Cost Center"
-    },
-    {
-      "fieldname": "sequence_no",
-      "label": "Sequence No",
-      "fieldtype": "Int"
-    },
-    {
-      "fieldname": "active",
-      "label": "Active",
-      "fieldtype": "Check",
-      "default": "1",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "remarks",
-      "label": "Remarks",
-      "fieldtype": "Small Text"
-    }
-  ],
-  "field_order": [
-    "nozzle_code",
-    "fuel_pump",
-    "company",
-    "pos_profile",
-    "item",
-    "uom",
-    "warehouse",
-    "cost_center",
-    "sequence_no",
-    "active",
-    "remarks"
-  ],
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "submit": 1,
-      "cancel": 1,
-      "amend": 1,
-      "report": 1,
-      "export": 1,
-      "print": 1
-    },
-    {
-      "role": "Sales Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "submit": 1,
-      "cancel": 1,
-      "amend": 1,
-      "report": 1,
-      "print": 1
-    },
-    {
-      "role": "Sales User",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "report": 1,
-      "print": 1
-    },
-    {
-      "role": "Accounts User",
-      "read": 1,
-      "report": 1,
-      "print": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "istable": 0,
-  "issingle": 0,
-  "editable_grid": 1,
-  "is_submittable": 0,
-  "quick_entry": 0,
-  "title_field": "nozzle_code",
-  "search_fields": "nozzle_code,fuel_pump,item"
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{fuel_pump}-{nozzle_code}",
+ "creation": "2026-03-13 16:21:02.529448",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "nozzle_code",
+  "fuel_pump",
+  "item",
+  "warehouse",
+  "uom",
+  "column_break_czbz",
+  "company",
+  "pos_profile",
+  "cost_center",
+  "sequence_no",
+  "active",
+  "section_break_tnmv",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "nozzle_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nozzle Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fuel_pump",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fuel Pump",
+   "options": "Fuel Pump",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fuel Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "sequence_no",
+   "fieldtype": "Int",
+   "label": "Sequence No"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "column_break_czbz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_tnmv",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "links": [],
+ "modified": "2026-03-14 01:26:48.144837",
+ "modified_by": "Administrator",
+ "module": "Dagaar Fuel Station",
+ "name": "Fuel Nozzle",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "write": 1
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "nozzle_code,fuel_pump,item",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "nozzle_code",
+ "track_changes": 1
 }

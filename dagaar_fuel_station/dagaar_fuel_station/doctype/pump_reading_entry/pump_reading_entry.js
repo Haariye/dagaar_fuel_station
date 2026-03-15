@@ -45,6 +45,23 @@ function sync_credit_row(frm, cdt, cdn) {
 }
 
 frappe.ui.form.on('Pump Reading Entry', {
+    setup(frm) {
+        frm.set_query('shift_closing_entry', function(doc) {
+            const filters = { docstatus: 1, status: ['!=', 'Closed'] };
+            if (doc.company) filters.company = doc.company;
+            if (doc.pos_profile) filters.pos_profile = doc.pos_profile;
+            return { filters };
+        });
+
+        frm.set_query('source_shift_closing_line', 'credit_allocations', function(doc) {
+            return {
+                query: 'dagaar_fuel_station.dagaar_fuel_station.doctype.pump_reading_entry.pump_reading_entry.get_shift_closing_line_query',
+                filters: {
+                    shift_closing_entry: doc.shift_closing_entry
+                }
+            };
+        });
+    },
     refresh(frm) {
         frm.add_custom_button(__('Fetch Shift Closing'), () => {
             if (!frm.doc.shift_closing_entry) {
