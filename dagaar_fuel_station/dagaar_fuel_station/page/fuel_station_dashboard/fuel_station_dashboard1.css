@@ -1,0 +1,12 @@
+.fuel-dashboard-root { padding: 12px; }
+.fuel-dashboard-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.fuel-dashboard-grid.bottom { grid-template-columns: 2fr 1fr; margin-top: 16px; }
+.fuel-card, .fuel-panel { border-radius: 14px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,.08); background: #fff; }
+.fuel-card.orange { background: linear-gradient(135deg, #fff0d8, #ffe1a8); }
+.fuel-card.blue { background: linear-gradient(135deg, #dff4ff, #b7e6ff); }
+.fuel-card.red { background: linear-gradient(135deg, #ffe3e3, #ffc0c0); }
+.fuel-card .big { font-size: 28px; font-weight: 700; }
+.fuel-card .small { margin-top: 6px; color: #555; }
+.fuel-bar-row { display: grid; grid-template-columns: 95px 1fr 120px; gap: 10px; align-items: center; margin: 10px 0; }
+.fuel-bar-row .bar-wrap { background: #f0f0f0; border-radius: 999px; height: 16px; overflow: hidden; }
+.fuel-bar-row .bar { background: linear-gradient(90deg, #7c3aed, #06b6d4); height: 100%; border-radius: 999px; }

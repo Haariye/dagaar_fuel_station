@@ -31,16 +31,7 @@ function recompute_cash_summary(frm) {
 
 function sync_credit_row(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
-    let source = null;
-    if (row.source_shift_closing_line) {
-        source = (frm.doc.meter_snapshots || []).find(d => d.source_shift_closing_line === row.source_shift_closing_line);
-    }
-    if (!source && row.fuel_nozzle) {
-        source = (frm.doc.meter_snapshots || []).find(d => d.fuel_nozzle === row.fuel_nozzle);
-        if (source) {
-            row.source_shift_closing_line = source.source_shift_closing_line;
-        }
-    }
+    const source = (frm.doc.meter_snapshots || []).find(d => d.source_shift_closing_line === row.source_shift_closing_line);
     if (source) {
         row.fuel_pump = source.fuel_pump;
         row.fuel_nozzle = source.fuel_nozzle;
@@ -62,9 +53,9 @@ frappe.ui.form.on('Pump Reading Entry', {
             return { filters };
         });
 
-        frm.set_query('fuel_nozzle', 'credit_allocations', function(doc) {
+        frm.set_query('source_shift_closing_line', 'credit_allocations', function(doc) {
             return {
-                query: 'dagaar_fuel_station.dagaar_fuel_station.doctype.pump_reading_entry.pump_reading_entry.get_shift_closing_nozzle_query',
+                query: 'dagaar_fuel_station.dagaar_fuel_station.doctype.pump_reading_entry.pump_reading_entry.get_shift_closing_line_query',
                 filters: {
                     shift_closing_entry: doc.shift_closing_entry
                 }
@@ -138,7 +129,7 @@ frappe.ui.form.on('Pump Reading Entry', {
 });
 
 frappe.ui.form.on('Pump Reading Credit Allocation', {
-    fuel_nozzle(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); },
+    source_shift_closing_line(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); },
     qty(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); },
     customer(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); }
 });

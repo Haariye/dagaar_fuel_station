@@ -47,17 +47,6 @@ def get_station_nozzles(company=None, pos_profile=None, include_existing=False, 
     return out
 
 
-@frappe.whitelist()
-def get_latest_opening_readings(nozzles=None, company=None, pos_profile=None):
-    parsed = frappe.parse_json(nozzles) if isinstance(nozzles, str) else (nozzles or [])
-    out = {}
-    for nozzle in parsed:
-        if not nozzle:
-            continue
-        out[nozzle] = get_last_nozzle_closing(nozzle)
-    return out
-
-
 class ShiftClosingEntry(Document):
     def validate(self):
         validate_company_for_pos_profile(self.company, self.pos_profile)
@@ -102,8 +91,8 @@ class ShiftClosingEntry(Document):
             row.item = nozzle.item
             row.uom = nozzle.uom or frappe.get_cached_value("Item", nozzle.item, "stock_uom")
             row.warehouse = nozzle.warehouse
-            # Always refresh opening from the latest submitted closing so duplicates/copies never keep stale values.
-            row.opening_reading = get_last_nozzle_closing(row.fuel_nozzle)
+            if not row.opening_reading:
+                row.opening_reading = get_last_nozzle_closing(row.fuel_nozzle)
             row.rate = get_item_rate(nozzle.item, price_list, row.uom, company=self.company, posting_date=self.date)
 
         self.lines = sorted(

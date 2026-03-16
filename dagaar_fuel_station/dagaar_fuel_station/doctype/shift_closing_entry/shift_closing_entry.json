@@ -107,7 +107,8 @@
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency"
+   "options": "Currency",
+   "read_only": 1
   },
   {
    "fieldname": "opening_cash_float",
@@ -214,8 +215,8 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-15 20:06:19.836338",
- "modified_by": "Administrator",
+ "modified": "2026-03-16 22:50:56.943381",
+ "modified_by": "sysadmin@naleye.dagaarsoft.app",
  "module": "Dagaar Fuel Station",
  "name": "Shift Closing Entry",
  "naming_rule": "By \"Naming Series\" field",

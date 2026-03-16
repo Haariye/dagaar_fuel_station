@@ -57,45 +57,6 @@ def get_shift_closing_snapshots(shift_closing_entry):
 
 
 
-
-
-@frappe.whitelist()
-@frappe.validate_and_sanitize_search_inputs
-def get_shift_closing_nozzle_query(doctype, txt, searchfield, start, page_len, filters):
-    shift_closing_entry = (filters or {}).get("shift_closing_entry")
-    if not shift_closing_entry:
-        return []
-
-    txt = f"%{txt or ''}%"
-    return frappe.db.sql(
-        """
-        select distinct
-            scl.fuel_nozzle as name,
-            coalesce(scl.display_name, scl.fuel_nozzle) as display_name,
-            scl.fuel_pump,
-            scl.item
-        from `tabShift Closing Line` scl
-        where scl.parent = %(shift_closing_entry)s
-          and scl.parenttype = 'Shift Closing Entry'
-          and ifnull(scl.fuel_nozzle, '') != ''
-          and (
-                scl.fuel_nozzle like %(txt)s
-                or coalesce(scl.display_name, '') like %(txt)s
-                or coalesce(scl.fuel_pump, '') like %(txt)s
-                or coalesce(scl.item, '') like %(txt)s
-          )
-        order by scl.idx asc
-        limit %(start)s, %(page_len)s
-        """,
-        {
-            "shift_closing_entry": shift_closing_entry,
-            "txt": txt,
-            "start": start,
-            "page_len": page_len,
-        },
-    )
-
-
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_shift_closing_line_query(doctype, txt, searchfield, start, page_len, filters):
@@ -190,25 +151,6 @@ class PumpReadingEntry(Document):
         self.attendant = self.attendant or closing.attendant
         self.currency = self.currency or closing.currency
 
-
-    def get_snapshot_by_source(self, source_shift_closing_line):
-        return next((d for d in self.meter_snapshots if d.source_shift_closing_line == source_shift_closing_line), None)
-
-    def get_snapshot_by_nozzle(self, fuel_nozzle):
-        return next((d for d in self.meter_snapshots if d.fuel_nozzle == fuel_nozzle), None)
-
-    def resolve_credit_allocation_source(self, row):
-        if row.source_shift_closing_line:
-            snap = self.get_snapshot_by_source(row.source_shift_closing_line)
-            if snap:
-                return snap
-        if row.fuel_nozzle:
-            snap = self.get_snapshot_by_nozzle(row.fuel_nozzle)
-            if snap:
-                row.source_shift_closing_line = snap.source_shift_closing_line
-                return snap
-        return None
-
     def load_meter_snapshots(self, force=False):
         if not self.shift_closing_entry:
             return
@@ -249,18 +191,19 @@ class PumpReadingEntry(Document):
             self.append("meter_snapshots", row)
 
     def prepare_credit_allocation_rows(self):
+        source_map = {d.source_shift_closing_line: d for d in self.meter_snapshots}
+        valid_sources = set(source_map.keys())
         cleaned = []
         for row in self.credit_allocations:
-            snap = self.resolve_credit_allocation_source(row)
-            if not snap:
-                continue
-            row.fuel_pump = snap.fuel_pump
-            row.fuel_nozzle = snap.fuel_nozzle
-            row.item = snap.item
-            row.uom = snap.uom
-            row.rate = snap.rate
-            row.amount = flt(row.qty) * flt(row.rate)
-            cleaned.append(row)
+            if row.source_shift_closing_line in valid_sources:
+                snap = source_map[row.source_shift_closing_line]
+                row.fuel_pump = snap.fuel_pump
+                row.fuel_nozzle = snap.fuel_nozzle
+                row.item = snap.item
+                row.uom = snap.uom
+                row.rate = snap.rate
+                row.amount = flt(row.qty) * flt(row.rate)
+                cleaned.append(row)
         self.set("credit_allocations", [])
         for row in cleaned:
             self.append("credit_allocations", row)
@@ -281,9 +224,10 @@ class PumpReadingEntry(Document):
         snapshot_map = {d.source_shift_closing_line: d for d in self.meter_snapshots}
         allocated = {}
         for row in self.credit_allocations:
-            snap = self.resolve_credit_allocation_source(row)
-            if not snap:
-                frappe.throw(_("Select a valid nozzle from the linked Shift Closing Entry in Credit Allocation."))
+            if not row.source_shift_closing_line:
+                frappe.throw(_("Credit Allocation row is missing source shift closing line."))
+            if row.source_shift_closing_line not in snapshot_map:
+                frappe.throw(_("Invalid source shift closing line in Credit Allocation: {0}").format(row.source_shift_closing_line))
             if not row.customer:
                 frappe.throw(_("Customer is required in Credit Allocation."))
             if flt(row.qty) <= 0:

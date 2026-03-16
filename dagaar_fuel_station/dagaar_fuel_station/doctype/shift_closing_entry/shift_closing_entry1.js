@@ -30,24 +30,6 @@ function apply_nozzle_defaults(frm, cdt, cdn, nozzle_name) {
 	});
 }
 
-function refresh_opening_readings(frm) {
-	const nozzles = (frm.doc.lines || []).map(d => d.fuel_nozzle).filter(Boolean);
-	if (!nozzles.length) return;
-	frappe.call({
-		method: 'dagaar_fuel_station.dagaar_fuel_station.doctype.shift_closing_entry.shift_closing_entry.get_latest_opening_readings',
-		args: { nozzles: nozzles },
-		callback: function(r) {
-			const readings = r.message || {};
-			(frm.doc.lines || []).forEach(row => {
-				if (row.fuel_nozzle && Object.prototype.hasOwnProperty.call(readings, row.fuel_nozzle)) {
-					frappe.model.set_value(row.doctype, row.name, 'opening_reading', flt(readings[row.fuel_nozzle]));
-					update_closing_line(frm, row.doctype, row.name);
-				}
-			});
-		}
-	});
-}
-
 function load_station_nozzles(frm) {
 	if (!frm.doc.company || !frm.doc.pos_profile || frm.doc.docstatus > 0) return;
 	const existing = (frm.doc.lines || []).map(d => d.fuel_nozzle).filter(Boolean);
@@ -64,7 +46,6 @@ function load_station_nozzles(frm) {
 				Object.assign(row, d);
 			});
 			frm.refresh_field('lines');
-			refresh_opening_readings(frm);
 			frm.trigger('recompute_totals');
 		}
 	});
@@ -85,15 +66,11 @@ frappe.ui.form.on('Shift Closing Entry', {
 		});
 	},
 	refresh(frm) {
-		if (frm.doc.docstatus === 0) {
-			refresh_opening_readings(frm);
-		}
 		if (frm.doc.docstatus === 0 && frm.doc.company && frm.doc.pos_profile && !(frm.doc.lines || []).length) {
 			load_station_nozzles(frm);
 		}
 		if (frm.doc.docstatus === 0) {
 			frm.add_custom_button(__('Load Nozzles'), () => load_station_nozzles(frm));
-			frm.add_custom_button(__('Refresh Opening Readings'), () => refresh_opening_readings(frm));
 		}
 	},
 	company(frm) {
@@ -104,15 +81,11 @@ frappe.ui.form.on('Shift Closing Entry', {
 		}
 		if (frm.doc.company && frm.doc.pos_profile && !(frm.doc.lines || []).length) {
 			load_station_nozzles(frm);
-		} else {
-			refresh_opening_readings(frm);
 		}
 	},
 	pos_profile(frm) {
 		if (frm.doc.company && frm.doc.pos_profile && !(frm.doc.lines || []).length) {
 			load_station_nozzles(frm);
-		} else {
-			refresh_opening_readings(frm);
 		}
 	},
 	recompute_totals(frm) {

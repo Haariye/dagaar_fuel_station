@@ -1,69 +1,169 @@
 import frappe
-from frappe.utils import today, add_days
-from frappe.utils.data import flt
+from frappe.utils import add_days, flt, getdate, today
 
 
-def _company_condition(company):
-    return (" and company = %(company)s", {"company": company}) if company else ("", {})
+def _date_range(from_date=None, to_date=None):
+    to_date = getdate(to_date or today())
+    from_date = getdate(from_date or add_days(to_date, -6))
+    if from_date > to_date:
+        from_date, to_date = to_date, from_date
+    return from_date, to_date
+
+
+def _conditions(company=None, pos_profile=None, from_date=None, to_date=None, alias="pre"):
+    conditions = [f"{alias}.docstatus = 1"]
+    values = {"from_date": from_date, "to_date": to_date}
+    if alias == "pre":
+        conditions.append(f"{alias}.date between %(from_date)s and %(to_date)s")
+    else:
+        conditions.append(f"{alias}.date between %(from_date)s and %(to_date)s")
+    if company:
+        conditions.append(f"{alias}.company = %(company)s")
+        values["company"] = company
+    if pos_profile:
+        conditions.append(f"{alias}.pos_profile = %(pos_profile)s")
+        values["pos_profile"] = pos_profile
+    return conditions, values
 
 
 @frappe.whitelist()
-def get_dashboard_data(company=None, date=None):
-    date = date or today()
-    filters = {"date": date}
-    company_sql, company_params = _company_condition(company)
-    filters.update(company_params)
+def get_dashboard_data(company=None, pos_profile=None, from_date=None, to_date=None):
+    from_date, to_date = _date_range(from_date, to_date)
+    pre_conditions, values = _conditions(company, pos_profile, from_date, to_date, alias="pre")
+    where_pre = " and ".join(pre_conditions)
 
-    shift_count = frappe.db.sql(
-        f"select count(*) from `tabShift Closing Entry` where docstatus=1 and date=%(date)s {company_sql}",
-        filters,
-    )[0][0]
-
-    billed = frappe.db.sql(
-        f"select ifnull(sum(total_amount),0) from `tabPump Reading Entry` where docstatus=1 and date=%(date)s {company_sql}",
-        filters,
-    )[0][0]
-
-    unpaid_credit = frappe.db.sql(
+    summary = frappe.db.sql(
         f"""
-        select ifnull(sum(outstanding_amount),0)
-        from `tabSales Invoice`
-        where docstatus=1 and outstanding_amount > 0 and fuel_station_date=%(date)s {company_sql}
+        select
+            count(distinct pre.name) as pump_entries,
+            ifnull(sum(pre.total_metered_qty), 0) as total_metered_qty,
+            ifnull(sum(pre.total_billable_qty), 0) as total_billable_qty,
+            ifnull(sum(pre.total_credit_qty), 0) as total_credit_qty,
+            ifnull(sum(pre.total_cash_qty), 0) as total_cash_qty,
+            ifnull(sum(pre.total_credit_amount), 0) as total_credit_amount,
+            ifnull(sum(pre.total_cash_amount), 0) as total_cash_amount,
+            ifnull(sum(pre.total_amount), 0) as total_amount,
+            ifnull(sum(pre.cash_over_short), 0) as cash_over_short
+        from `tabPump Reading Entry` pre
+        where {where_pre}
         """,
-        filters,
-    )[0][0]
+        values,
+        as_dict=True,
+    )[0]
 
-    top_nozzles = frappe.db.sql(
+    sce_conditions, sce_values = _conditions(company, pos_profile, from_date, to_date, alias="sce")
+    where_sce = " and ".join(sce_conditions)
+    shift_stats = frappe.db.sql(
         f"""
-        select scl.fuel_nozzle, ifnull(sum(scl.net_billable_qty),0) as liters
-        from `tabShift Closing Line` scl
-        inner join `tabShift Closing Entry` sce on sce.name = scl.parent
-        where sce.docstatus=1 and sce.date=%(date)s {company_sql.replace('company', 'sce.company')}
-        group by scl.fuel_nozzle
-        order by liters desc
-        limit 5
+        select
+            count(distinct sce.name) as shift_closings,
+            count(distinct sce.attendant) as attendants,
+            count(distinct scl.fuel_nozzle) as active_nozzles
+        from `tabShift Closing Entry` sce
+        left join `tabShift Closing Line` scl on scl.parent = sce.name
+        where {where_sce}
         """,
-        filters,
+        sce_values,
+        as_dict=True,
+    )[0]
+
+    daily_trend = frappe.db.sql(
+        f"""
+        select
+            pre.date,
+            ifnull(sum(pre.total_amount), 0) as amount,
+            ifnull(sum(pre.total_billable_qty), 0) as billable_qty,
+            ifnull(sum(pre.total_credit_amount), 0) as credit_amount,
+            ifnull(sum(pre.total_cash_amount), 0) as cash_amount
+        from `tabPump Reading Entry` pre
+        where {where_pre}
+        group by pre.date
+        order by pre.date asc
+        """,
+        values,
         as_dict=True,
     )
 
-    daily = frappe.db.sql(
+    top_nozzles = frappe.db.sql(
         f"""
-        select date, ifnull(sum(total_amount),0) as amount, ifnull(sum(total_billable_qty),0) as qty
-        from `tabPump Reading Entry`
-        where docstatus=1 and date between %(from_date)s and %(date)s {company_sql}
-        group by date
-        order by date asc
+        select
+            ms.fuel_nozzle,
+            ifnull(sum(ms.billable_qty), 0) as liters,
+            ifnull(sum(ms.amount), 0) as amount
+        from `tabPump Reading Meter Snapshot` ms
+        inner join `tabPump Reading Entry` pre on pre.name = ms.parent
+        where {where_pre}
+        group by ms.fuel_nozzle
+        order by liters desc, amount desc
+        limit 8
         """,
-        {**filters, "from_date": add_days(date, -6)},
+        values,
+        as_dict=True,
+    )
+
+    top_customers = frappe.db.sql(
+        f"""
+        select
+            ca.customer,
+            ifnull(sum(ca.qty), 0) as liters,
+            ifnull(sum(ca.amount), 0) as amount
+        from `tabPump Reading Credit Allocation` ca
+        inner join `tabPump Reading Entry` pre on pre.name = ca.parent
+        where {where_pre}
+        group by ca.customer
+        order by amount desc, liters desc
+        limit 8
+        """,
+        values,
+        as_dict=True,
+    )
+
+    station_rows = frappe.db.sql(
+        f"""
+        select
+            pre.pos_profile,
+            ifnull(sum(pre.total_billable_qty), 0) as liters,
+            ifnull(sum(pre.total_amount), 0) as amount,
+            ifnull(sum(pre.total_credit_amount), 0) as credit_amount,
+            ifnull(sum(pre.total_cash_amount), 0) as cash_amount
+        from `tabPump Reading Entry` pre
+        where {where_pre}
+        group by pre.pos_profile
+        order by amount desc
+        limit 10
+        """,
+        values,
+        as_dict=True,
+    )
+
+    shift_rows = frappe.db.sql(
+        f"""
+        select
+            pre.shift,
+            count(*) as entries,
+            ifnull(sum(pre.total_billable_qty), 0) as liters,
+            ifnull(sum(pre.total_amount), 0) as amount
+        from `tabPump Reading Entry` pre
+        where {where_pre}
+        group by pre.shift
+        order by amount desc
+        """,
+        values,
         as_dict=True,
     )
 
     return {
-        "date": date,
-        "shift_closing_count": shift_count,
-        "billed_amount": flt(billed),
-        "unpaid_credit": flt(unpaid_credit),
+        "filters": {
+            "from_date": str(from_date),
+            "to_date": str(to_date),
+            "company": company,
+            "pos_profile": pos_profile,
+        },
+        "summary": {k: flt(v) if k not in {"pump_entries"} else int(v or 0) for k, v in summary.items()},
+        "shift_stats": {k: int(v or 0) for k, v in shift_stats.items()},
+        "daily_trend": daily_trend,
         "top_nozzles": top_nozzles,
-        "daily": daily,
+        "top_customers": top_customers,
+        "station_rows": station_rows,
+        "shift_rows": shift_rows,
     }
