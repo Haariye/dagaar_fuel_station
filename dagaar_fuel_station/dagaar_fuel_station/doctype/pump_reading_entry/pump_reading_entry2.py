@@ -1,14 +1,10 @@
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, nowdate
 from dagaar_fuel_station.dagaar_fuel_station.utils import (
     get_cash_customer,
-    get_company_currency,
-    get_currency_context,
     get_default_cash_mode_of_payment,
-    get_exchange_rate_safe,
     get_item_rate,
     get_last_nozzle_closing,
     get_pos_price_list,
@@ -17,17 +13,14 @@ from dagaar_fuel_station.dagaar_fuel_station.utils import (
 
 
 @frappe.whitelist()
-def get_nozzle_defaults(nozzle=None, pos_profile=None, currency=None, company=None, posting_date=None):
+def get_nozzle_defaults(nozzle=None, pos_profile=None):
     if not nozzle:
         return {}
     nozzle_doc = frappe.get_cached_doc("Fuel Nozzle", nozzle)
-    rate = get_item_rate(nozzle_doc.item, get_pos_price_list(pos_profile), nozzle_doc.uom, company=company, posting_date=posting_date, target_currency=currency)
-    home_currency = get_company_currency(company)
-    conversion_rate = get_exchange_rate_safe(currency or home_currency, home_currency, posting_date or nowdate())
+    rate = get_item_rate(nozzle_doc.item, get_pos_price_list(pos_profile), nozzle_doc.uom)
     return {
         "opening_reading": get_last_nozzle_closing(nozzle),
         "rate": rate,
-        "base_rate": flt(rate) * flt(conversion_rate),
         "item": nozzle_doc.item,
         "warehouse": nozzle_doc.warehouse,
         "uom": nozzle_doc.uom,
@@ -55,13 +48,15 @@ def get_shift_closing_snapshots(shift_closing_entry):
             "adjustment_qty": d.adjustment_qty,
             "billable_qty": d.net_billable_qty,
             "rate": d.rate,
-            "base_rate": flt(d.rate) * flt(doc.conversion_rate or 1),
             "amount": d.net_billable_amount,
-            "amount_home": flt(d.net_billable_amount) * flt(doc.conversion_rate or 1),
             "pos_profile": doc.pos_profile,
         }
         for d in doc.lines
     ]
+
+
+
+
 
 
 @frappe.whitelist()
@@ -101,10 +96,46 @@ def get_shift_closing_nozzle_query(doctype, txt, searchfield, start, page_len, f
     )
 
 
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_shift_closing_line_query(doctype, txt, searchfield, start, page_len, filters):
+    shift_closing_entry = (filters or {}).get("shift_closing_entry")
+    if not shift_closing_entry:
+        return []
+
+    txt = f"%{txt or ''}%"
+    return frappe.db.sql(
+        """
+        select
+            scl.name,
+            coalesce(scl.display_name, scl.fuel_nozzle, scl.name) as display_name,
+            scl.fuel_pump,
+            scl.item
+        from `tabShift Closing Line` scl
+        where scl.parent = %(shift_closing_entry)s
+          and scl.parenttype = 'Shift Closing Entry'
+          and (
+                scl.name like %(txt)s
+                or coalesce(scl.display_name, '') like %(txt)s
+                or coalesce(scl.fuel_nozzle, '') like %(txt)s
+                or coalesce(scl.fuel_pump, '') like %(txt)s
+                or coalesce(scl.item, '') like %(txt)s
+          )
+        order by scl.idx asc
+        limit %(start)s, %(page_len)s
+        """,
+        {
+            "shift_closing_entry": shift_closing_entry,
+            "txt": txt,
+            "start": start,
+            "page_len": page_len,
+        },
+    )
+
+
 class PumpReadingEntry(Document):
     def before_validate(self):
         self.sync_header_from_shift_closing()
-        self.set_currency_context()
         self.load_meter_snapshots(force=False)
         self.prepare_credit_allocation_rows()
         self.calculate_cash_summaries()
@@ -147,12 +178,6 @@ class PumpReadingEntry(Document):
                 update_modified=False,
             )
 
-    def set_currency_context(self):
-        ctx = get_currency_context(self.company, self.currency, self.date)
-        self.home_currency = ctx.get("home_currency")
-        self.currency = ctx.get("currency")
-        self.conversion_rate = flt(ctx.get("conversion_rate")) or 1
-
     def sync_header_from_shift_closing(self):
         if not self.shift_closing_entry:
             return
@@ -164,8 +189,7 @@ class PumpReadingEntry(Document):
         self.pos_profile = self.pos_profile or closing.pos_profile
         self.attendant = self.attendant or closing.attendant
         self.currency = self.currency or closing.currency
-        self.home_currency = self.home_currency or closing.home_currency
-        self.conversion_rate = self.conversion_rate or closing.conversion_rate
+
 
     def get_snapshot_by_source(self, source_shift_closing_line):
         return next((d for d in self.meter_snapshots if d.source_shift_closing_line == source_shift_closing_line), None)
@@ -211,9 +235,7 @@ class PumpReadingEntry(Document):
                 "adjustment_qty": line.adjustment_qty,
                 "billable_qty": line.net_billable_qty,
                 "rate": line.rate,
-                "base_rate": flt(line.rate) * flt(self.conversion_rate),
                 "amount": line.net_billable_amount,
-                "amount_home": flt(line.net_billable_amount) * flt(self.conversion_rate),
                 "pos_profile": closing.pos_profile,
             }
             if row:
@@ -237,9 +259,7 @@ class PumpReadingEntry(Document):
             row.item = snap.item
             row.uom = snap.uom
             row.rate = snap.rate
-            row.base_rate = snap.base_rate
             row.amount = flt(row.qty) * flt(row.rate)
-            row.amount_home = flt(row.amount) * flt(self.conversion_rate)
             cleaned.append(row)
         self.set("credit_allocations", [])
         for row in cleaned:
@@ -301,15 +321,11 @@ class PumpReadingEntry(Document):
                 "credit_qty": credit_qty,
                 "cash_qty": cash_qty,
                 "rate": snap.rate,
-                "base_rate": snap.base_rate,
                 "cash_amount": cash_qty * flt(snap.rate),
-                "cash_amount_home": cash_qty * flt(snap.rate) * flt(self.conversion_rate),
                 "adjustment_qty": adjustment_qty,
                 "adjustment_amount": adjustment_qty * flt(snap.rate),
-                "adjustment_amount_home": adjustment_qty * flt(snap.rate) * flt(self.conversion_rate),
                 "net_balance_qty": cash_qty,
                 "net_balance_amount": cash_qty * flt(snap.rate),
-                "net_balance_amount_home": cash_qty * flt(snap.rate) * flt(self.conversion_rate),
             })
 
     def validate_totals_against_snapshot(self):
@@ -327,12 +343,7 @@ class PumpReadingEntry(Document):
         self.total_credit_amount = sum(flt(d.amount) for d in self.credit_allocations)
         self.total_cash_amount = sum(flt(d.cash_amount) for d in self.cash_summaries)
         self.total_amount = flt(self.total_credit_amount) + flt(self.total_cash_amount)
-        self.total_credit_amount_home = flt(self.total_credit_amount) * flt(self.conversion_rate)
-        self.total_cash_amount_home = flt(self.total_cash_amount) * flt(self.conversion_rate)
-        self.total_amount_home = flt(self.total_amount) * flt(self.conversion_rate)
-        self.actual_cash_received_home = flt(self.actual_cash_received) * flt(self.conversion_rate)
         self.cash_over_short = flt(self.actual_cash_received) - flt(self.total_cash_amount)
-        self.cash_over_short_home = flt(self.cash_over_short) * flt(self.conversion_rate)
 
     def set_status(self):
         if self.docstatus == 2:
@@ -383,7 +394,6 @@ class PumpReadingEntry(Document):
         if self.posting_time:
             inv.posting_time = self.posting_time
         inv.currency = self.currency
-        inv.conversion_rate = self.conversion_rate or 1
         inv.update_stock = frappe.get_single("Fuel Station Settings").default_update_stock or 0
         inv.pump_reading_entry = self.name
         inv.shift_closing_entry = self.shift_closing_entry

@@ -1,4 +1,3 @@
-
 function recompute_cash_summary(frm) {
     const snapshots = frm.doc.meter_snapshots || [];
     const credits = frm.doc.credit_allocations || [];
@@ -20,15 +19,11 @@ function recompute_cash_summary(frm) {
         row.credit_qty = credit_qty;
         row.cash_qty = cash_qty;
         row.rate = s.rate;
-        row.base_rate = s.base_rate;
         row.cash_amount = cash_qty * flt(s.rate);
-        row.cash_amount_home = row.cash_amount * flt(frm.doc.conversion_rate || 1);
         row.adjustment_qty = s.adjustment_qty;
         row.adjustment_amount = flt(s.adjustment_qty) * flt(s.rate);
-        row.adjustment_amount_home = row.adjustment_amount * flt(frm.doc.conversion_rate || 1);
         row.net_balance_qty = cash_qty;
         row.net_balance_amount = cash_qty * flt(s.rate);
-        row.net_balance_amount_home = row.net_balance_amount * flt(frm.doc.conversion_rate || 1);
     });
     frm.refresh_field('cash_summaries');
     frm.trigger('recompute_totals');
@@ -52,27 +47,10 @@ function sync_credit_row(frm, cdt, cdn) {
         row.item = source.item;
         row.uom = source.uom;
         row.rate = source.rate;
-        row.base_rate = source.base_rate;
         row.amount = flt(row.qty) * flt(row.rate);
-        row.amount_home = flt(row.amount) * flt(frm.doc.conversion_rate || 1);
         frm.refresh_field('credit_allocations');
     }
     recompute_cash_summary(frm);
-}
-
-function set_currency_context(frm, callback) {
-    if (!frm.doc.company) return;
-    frappe.call({
-        method: 'dagaar_fuel_station.dagaar_fuel_station.utils.get_currency_context',
-        args: { company: frm.doc.company, currency: frm.doc.currency, posting_date: frm.doc.date },
-        callback: function(r) {
-            if (!r.message) return;
-            frm.set_value('home_currency', r.message.home_currency);
-            frm.set_value('currency', r.message.currency);
-            frm.set_value('conversion_rate', r.message.conversion_rate || 1);
-            if (callback) callback();
-        }
-    });
 }
 
 frappe.ui.form.on('Pump Reading Entry', {
@@ -93,10 +71,6 @@ frappe.ui.form.on('Pump Reading Entry', {
             };
         });
     },
-    onload(frm) { set_currency_context(frm); },
-    company(frm) { set_currency_context(frm); },
-    date(frm) { set_currency_context(frm); },
-    currency(frm) { set_currency_context(frm, () => frm.trigger('recompute_totals')); },
     refresh(frm) {
         frm.add_custom_button(__('Fetch Shift Closing'), () => {
             if (!frm.doc.shift_closing_entry) {
@@ -133,8 +107,6 @@ frappe.ui.form.on('Pump Reading Entry', {
             frm.set_value('pos_profile', doc.pos_profile);
             frm.set_value('attendant', doc.attendant);
             frm.set_value('currency', doc.currency);
-            frm.set_value('home_currency', doc.home_currency);
-            frm.set_value('conversion_rate', doc.conversion_rate || 1);
         });
     },
     recompute_totals(frm) {
@@ -158,12 +130,7 @@ frappe.ui.form.on('Pump Reading Entry', {
         frm.set_value('total_credit_amount', total_credit_amount);
         frm.set_value('total_cash_amount', total_cash_amount);
         frm.set_value('total_amount', total_credit_amount + total_cash_amount);
-        frm.set_value('total_credit_amount_home', total_credit_amount * flt(frm.doc.conversion_rate || 1));
-        frm.set_value('total_cash_amount_home', total_cash_amount * flt(frm.doc.conversion_rate || 1));
-        frm.set_value('total_amount_home', flt(frm.doc.total_amount) * flt(frm.doc.conversion_rate || 1));
-        frm.set_value('actual_cash_received_home', flt(frm.doc.actual_cash_received) * flt(frm.doc.conversion_rate || 1));
         frm.set_value('cash_over_short', flt(frm.doc.actual_cash_received) - total_cash_amount);
-        frm.set_value('cash_over_short_home', flt(frm.doc.cash_over_short) * flt(frm.doc.conversion_rate || 1));
     },
     actual_cash_received(frm) {
         frm.trigger('recompute_totals');

@@ -17,8 +17,6 @@
   "pos_profile",
   "cost_center",
   "sequence_no",
-  "initial_opening_reading",
-  "opening_reading_locked",
   "active",
   "section_break_tnmv",
   "remarks"
@@ -83,19 +81,6 @@
    "fieldname": "sequence_no",
    "fieldtype": "Int",
    "label": "Sequence No"
-  },
-  {
-   "fieldname": "initial_opening_reading",
-   "fieldtype": "Float",
-   "label": "Initial Opening Reading",
-   "precision": "3"
-  },
-  {
-   "default": "0",
-   "fieldname": "opening_reading_locked",
-   "fieldtype": "Check",
-   "label": "Opening Reading Locked",
-   "read_only": 1
   },
   {
    "default": "1",

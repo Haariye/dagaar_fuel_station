@@ -10,8 +10,6 @@
   "date",
   "column_break_zd2p",
   "currency",
-  "home_currency",
-  "conversion_rate",
   "posting_time",
   "shift",
   "company",
@@ -32,16 +30,11 @@
   "total_credit_qty",
   "total_cash_qty",
   "total_credit_amount",
-  "total_credit_amount_home",
   "column_break_k6bm",
   "total_cash_amount",
-  "total_cash_amount_home",
   "total_amount",
-  "total_amount_home",
   "actual_cash_received",
-  "actual_cash_received_home",
   "cash_over_short",
-  "cash_over_short_home",
   "section_invoices",
   "invoice_references",
   "amended_from",
@@ -108,20 +101,6 @@
    "options": "Currency"
   },
   {
-   "fieldname": "home_currency",
-   "fieldtype": "Link",
-   "label": "Home Currency",
-   "options": "Currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "conversion_rate",
-   "fieldtype": "Float",
-   "label": "Exchange Rate",
-   "precision": "9",
-   "default": "1"
-  },
-  {
    "fieldname": "shift_closing_entry",
    "fieldtype": "Link",
    "label": "Shift Closing Entry",
@@ -183,24 +162,10 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_credit_amount_home",
-   "fieldtype": "Currency",
-   "label": "Total Credit Amount (Home)",
-   "options": "home_currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "total_cash_amount",
    "fieldtype": "Currency",
    "label": "Total Cash Amount",
    "options": "currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_cash_amount_home",
-   "fieldtype": "Currency",
-   "label": "Total Cash Amount (Home)",
-   "options": "home_currency",
    "read_only": 1
   },
   {
@@ -211,37 +176,16 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_amount_home",
-   "fieldtype": "Currency",
-   "label": "Total Amount (Home)",
-   "options": "home_currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "actual_cash_received",
    "fieldtype": "Currency",
    "label": "Actual Cash Received",
    "options": "currency"
   },
   {
-   "fieldname": "actual_cash_received_home",
-   "fieldtype": "Currency",
-   "label": "Actual Cash Received (Home)",
-   "options": "home_currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "cash_over_short",
    "fieldtype": "Currency",
    "label": "Cash Over / Short",
    "options": "currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "cash_over_short_home",
-   "fieldtype": "Currency",
-   "label": "Cash Over / Short (Home)",
-   "options": "home_currency",
    "read_only": 1
   },
   {

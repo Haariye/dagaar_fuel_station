@@ -20,11 +20,8 @@
   "adjustment_qty",
   "net_billable_qty",
   "rate",
-  "base_rate",
   "gross_amount",
-  "gross_amount_home",
   "net_billable_amount",
-  "net_billable_amount_home",
   "notes",
   "date"
  ],
@@ -131,36 +128,15 @@
    "read_only": 1
   },
   {
-   "fieldname": "base_rate",
-   "fieldtype": "Currency",
-   "label": "Rate (Home)",
-   "options": "parent.home_currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "gross_amount",
    "fieldtype": "Currency",
    "label": "Gross Amount",
    "read_only": 1
   },
   {
-   "fieldname": "gross_amount_home",
-   "fieldtype": "Currency",
-   "label": "Gross Amount (Home)",
-   "options": "parent.home_currency",
-   "read_only": 1
-  },
-  {
    "fieldname": "net_billable_amount",
    "fieldtype": "Currency",
    "label": "Net Billable Amount",
-   "read_only": 1
-  },
-  {
-   "fieldname": "net_billable_amount_home",
-   "fieldtype": "Currency",
-   "label": "Net Billable Amount (Home)",
-   "options": "parent.home_currency",
    "read_only": 1
   },
   {
