@@ -55,7 +55,6 @@ function sync_credit_row(frm, cdt, cdn) {
         row.base_rate = source.base_rate;
         row.amount = flt(row.qty) * flt(row.rate);
         row.amount_home = flt(row.amount) * flt(frm.doc.conversion_rate || 1);
-        row.discount_amount = flt(row.discount_amount);
         frm.refresh_field('credit_allocations');
     }
     recompute_cash_summary(frm);
@@ -139,43 +138,34 @@ frappe.ui.form.on('Pump Reading Entry', {
         });
     },
     recompute_totals(frm) {
-        let total_metered_qty = 0, total_billable_qty = 0, total_credit_qty = 0, total_cash_qty = 0;
-        let gross_credit_amount = 0, gross_cash_amount = 0, total_credit_discount = 0;
-        const additional_discount_amount = flt(frm.doc.additional_discount_amount);
+        let total_metered_qty = 0, total_billable_qty = 0, total_credit_qty = 0, total_cash_qty = 0, total_credit_amount = 0, total_cash_amount = 0;
         (frm.doc.meter_snapshots || []).forEach(d => {
             total_metered_qty += flt(d.metered_qty);
             total_billable_qty += flt(d.billable_qty);
         });
         (frm.doc.credit_allocations || []).forEach(d => {
             total_credit_qty += flt(d.qty);
-            gross_credit_amount += flt(d.amount);
-            total_credit_discount += flt(d.discount_amount);
+            total_credit_amount += flt(d.amount);
         });
         (frm.doc.cash_summaries || []).forEach(d => {
             total_cash_qty += flt(d.cash_qty);
-            gross_cash_amount += flt(d.cash_amount);
+            total_cash_amount += flt(d.cash_amount);
         });
-        const total_credit_amount = gross_credit_amount - total_credit_discount;
-        const total_cash_amount = gross_cash_amount - additional_discount_amount;
-        const total_amount = total_credit_amount + total_cash_amount;
         frm.set_value('total_metered_qty', total_metered_qty);
         frm.set_value('total_billable_qty', total_billable_qty);
         frm.set_value('total_credit_qty', total_credit_qty);
         frm.set_value('total_cash_qty', total_cash_qty);
         frm.set_value('total_credit_amount', total_credit_amount);
         frm.set_value('total_cash_amount', total_cash_amount);
-        frm.set_value('total_amount', total_amount);
+        frm.set_value('total_amount', total_credit_amount + total_cash_amount);
         frm.set_value('total_credit_amount_home', total_credit_amount * flt(frm.doc.conversion_rate || 1));
         frm.set_value('total_cash_amount_home', total_cash_amount * flt(frm.doc.conversion_rate || 1));
-        frm.set_value('total_amount_home', total_amount * flt(frm.doc.conversion_rate || 1));
+        frm.set_value('total_amount_home', flt(frm.doc.total_amount) * flt(frm.doc.conversion_rate || 1));
         frm.set_value('actual_cash_received_home', flt(frm.doc.actual_cash_received) * flt(frm.doc.conversion_rate || 1));
         frm.set_value('cash_over_short', flt(frm.doc.actual_cash_received) - total_cash_amount);
         frm.set_value('cash_over_short_home', flt(frm.doc.cash_over_short) * flt(frm.doc.conversion_rate || 1));
     },
     actual_cash_received(frm) {
-        frm.trigger('recompute_totals');
-    },
-    additional_discount_amount(frm) {
         frm.trigger('recompute_totals');
     }
 });
@@ -183,6 +173,5 @@ frappe.ui.form.on('Pump Reading Entry', {
 frappe.ui.form.on('Pump Reading Credit Allocation', {
     fuel_nozzle(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); },
     qty(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); },
-    customer(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); },
-    discount_amount(frm) { frm.trigger('recompute_totals'); }
+    customer(frm, cdt, cdn) { sync_credit_row(frm, cdt, cdn); }
 });

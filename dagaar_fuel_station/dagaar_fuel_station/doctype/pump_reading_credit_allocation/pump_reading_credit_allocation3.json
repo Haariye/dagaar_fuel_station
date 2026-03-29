@@ -16,7 +16,6 @@
   "base_rate",
   "amount",
   "amount_home",
-  "discount_amount",
   "notes"
  ],
  "fields": [
@@ -100,13 +99,6 @@
    "label": "Amount (Home)",
    "options": "parent.home_currency",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "discount_amount",
-   "fieldtype": "Currency",
-   "label": "Discount Amount",
-   "options": "parent.currency"
   },
   {
    "fieldname": "notes",

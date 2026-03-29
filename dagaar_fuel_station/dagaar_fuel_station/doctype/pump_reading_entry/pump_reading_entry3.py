@@ -240,7 +240,6 @@ class PumpReadingEntry(Document):
             row.base_rate = snap.base_rate
             row.amount = flt(row.qty) * flt(row.rate)
             row.amount_home = flt(row.amount) * flt(self.conversion_rate)
-            row.discount_amount = flt(row.discount_amount)
             cleaned.append(row)
         self.set("credit_allocations", [])
         for row in cleaned:
@@ -269,10 +268,6 @@ class PumpReadingEntry(Document):
                 frappe.throw(_("Customer is required in Credit Allocation."))
             if flt(row.qty) <= 0:
                 frappe.throw(_("Credit allocation qty must be greater than zero."))
-            if flt(row.discount_amount) < 0:
-                frappe.throw(_("Credit allocation discount cannot be negative for nozzle {0}.").format(row.fuel_nozzle or row.idx))
-            if flt(row.discount_amount) - flt(row.amount) > 0.0001:
-                frappe.throw(_("Credit allocation discount cannot exceed amount for nozzle {0}.").format(row.fuel_nozzle or row.idx))
             allocated.setdefault(row.source_shift_closing_line, 0)
             allocated[row.source_shift_closing_line] += flt(row.qty)
         for source, qty in allocated.items():
@@ -280,10 +275,6 @@ class PumpReadingEntry(Document):
             if qty - billable > 0.0001:
                 label = snapshot_map[source].fuel_nozzle or source
                 frappe.throw(_("Credit qty for source nozzle {0} cannot exceed billable qty {1}.").format(label, billable))
-        if flt(self.additional_discount_amount) < 0:
-            frappe.throw(_("Additional discount amount cannot be negative."))
-        if flt(self.additional_discount_amount) - sum(flt(d.cash_amount) for d in self.cash_summaries) > 0.0001:
-            frappe.throw(_("Additional discount amount cannot exceed total cash amount."))
 
     def calculate_cash_summaries(self):
         self.set("cash_summaries", [])
@@ -329,16 +320,12 @@ class PumpReadingEntry(Document):
             frappe.throw(_("Snapshot qty must equal Credit Qty + Cash Qty."))
 
     def calculate_totals(self):
-        gross_credit_amount = sum(flt(d.amount) for d in self.credit_allocations)
-        total_credit_discount = sum(flt(d.discount_amount) for d in self.credit_allocations)
-        gross_cash_amount = sum(flt(d.cash_amount) for d in self.cash_summaries)
-        self.additional_discount_amount = flt(self.additional_discount_amount)
         self.total_metered_qty = sum(flt(d.metered_qty) for d in self.meter_snapshots)
         self.total_billable_qty = sum(flt(d.billable_qty) for d in self.meter_snapshots)
         self.total_credit_qty = sum(flt(d.qty) for d in self.credit_allocations)
         self.total_cash_qty = sum(flt(d.cash_qty) for d in self.cash_summaries)
-        self.total_credit_amount = gross_credit_amount - total_credit_discount
-        self.total_cash_amount = gross_cash_amount - flt(self.additional_discount_amount)
+        self.total_credit_amount = sum(flt(d.amount) for d in self.credit_allocations)
+        self.total_cash_amount = sum(flt(d.cash_amount) for d in self.cash_summaries)
         self.total_amount = flt(self.total_credit_amount) + flt(self.total_cash_amount)
         self.total_credit_amount_home = flt(self.total_credit_amount) * flt(self.conversion_rate)
         self.total_cash_amount_home = flt(self.total_cash_amount) * flt(self.conversion_rate)
@@ -428,17 +415,6 @@ class PumpReadingEntry(Document):
                 "fuel_nozzle": row.fuel_nozzle,
             }
             inv.append("items", item_row)
-
-        invoice_discount = sum(flt(getattr(row, "discount_amount", 0)) for row in rows) if sale_type == "Credit" else flt(self.additional_discount_amount)
-        if invoice_discount:
-            inv.apply_discount_on = "Grand Total"
-            inv.additional_discount_percentage = 0
-            if inv.currency == self.home_currency:
-                inv.base_discount_amount = invoice_discount
-                inv.discount_amount = invoice_discount
-            else:
-                inv.discount_amount = invoice_discount
-                inv.base_discount_amount = flt(invoice_discount) * flt(inv.conversion_rate or 1)
 
         inv.flags.ignore_permissions = True
         inv.insert()

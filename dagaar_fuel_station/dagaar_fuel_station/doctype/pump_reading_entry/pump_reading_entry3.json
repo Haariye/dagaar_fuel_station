@@ -28,23 +28,20 @@
   "cash_summaries",
   "section_totals",
   "total_metered_qty",
-  "total_credit_qty",
   "total_billable_qty",
-  "column_break_dlvy",
+  "total_credit_qty",
+  "total_cash_qty",
   "total_credit_amount",
   "total_credit_amount_home",
-  "total_amount",
-  "total_amount_home",
-  "cash_totals_section",
-  "total_cash_qty",
+  "column_break_k6bm",
   "total_cash_amount",
   "total_cash_amount_home",
-  "cash_over_short",
+  "total_amount",
+  "total_amount_home",
   "actual_cash_received",
-  "column_break_k6bm",
-  "additional_discount_amount",
-  "cash_over_short_home",
   "actual_cash_received_home",
+  "cash_over_short",
+  "cash_over_short_home",
   "section_invoices",
   "invoice_references",
   "amended_from",
@@ -146,10 +143,9 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
    "fieldname": "section_totals",
    "fieldtype": "Section Break",
-   "label": "Credit Totals"
+   "label": "Totals"
   },
   {
    "allow_on_submit": 1,
@@ -228,14 +224,6 @@
    "label": "Total Amount (Home)",
    "options": "home_currency",
    "read_only": 1
-  },
-  {
-   "allow_on_submit": 1,
-   "default": "0",
-   "fieldname": "additional_discount_amount",
-   "fieldtype": "Currency",
-   "label": "Additional Discount Amount",
-   "options": "currency"
   },
   {
    "fieldname": "actual_cash_received",
@@ -345,20 +333,11 @@
   {
    "fieldname": "section_break_citj",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_dlvy",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "cash_totals_section",
-   "fieldtype": "Section Break",
-   "label": "Cash Totals"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-29 17:18:53.794254",
+ "modified": "2026-03-26 14:18:14.349930",
  "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
  "name": "Pump Reading Entry",
