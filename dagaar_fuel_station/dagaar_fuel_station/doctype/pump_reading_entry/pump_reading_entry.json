@@ -115,11 +115,11 @@
    "read_only": 1
   },
   {
+   "default": "1",
    "fieldname": "conversion_rate",
    "fieldtype": "Float",
    "label": "Exchange Rate",
-   "precision": "9",
-   "default": "1"
+   "precision": "9"
   },
   {
    "fieldname": "shift_closing_entry",
@@ -148,6 +148,7 @@
    "label": "Totals"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_metered_qty",
    "fieldtype": "Float",
    "label": "Total Metered Qty",
@@ -155,6 +156,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_billable_qty",
    "fieldtype": "Float",
    "label": "Total Billable Qty",
@@ -169,6 +171,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_cash_qty",
    "fieldtype": "Float",
    "label": "Total Cash Qty",
@@ -176,6 +179,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_credit_amount",
    "fieldtype": "Currency",
    "label": "Total Credit Amount",
@@ -183,6 +187,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_credit_amount_home",
    "fieldtype": "Currency",
    "label": "Total Credit Amount (Home)",
@@ -190,6 +195,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_cash_amount",
    "fieldtype": "Currency",
    "label": "Total Cash Amount",
@@ -197,6 +203,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_cash_amount_home",
    "fieldtype": "Currency",
    "label": "Total Cash Amount (Home)",
@@ -211,6 +218,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "total_amount_home",
    "fieldtype": "Currency",
    "label": "Total Amount (Home)",
@@ -224,6 +232,7 @@
    "options": "currency"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "actual_cash_received_home",
    "fieldtype": "Currency",
    "label": "Actual Cash Received (Home)",
@@ -231,6 +240,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "cash_over_short",
    "fieldtype": "Currency",
    "label": "Cash Over / Short",
@@ -238,6 +248,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "cash_over_short_home",
    "fieldtype": "Currency",
    "label": "Cash Over / Short (Home)",
@@ -326,7 +337,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-15 18:42:34.326693",
+ "modified": "2026-03-26 14:18:14.349930",
  "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
  "name": "Pump Reading Entry",
@@ -373,7 +384,6 @@
    "write": 1
   }
  ],
- "row_format": "Dynamic",
  "search_fields": "date,shift,pos_profile,attendant,shift_closing_entry",
  "sort_field": "modified",
  "sort_order": "DESC",

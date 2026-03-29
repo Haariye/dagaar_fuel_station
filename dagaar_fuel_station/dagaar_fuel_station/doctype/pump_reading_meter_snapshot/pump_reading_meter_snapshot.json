@@ -1,140 +1,9 @@
 {
+ "actions": [],
+ "creation": "2026-03-24 19:37:41.911890",
  "doctype": "DocType",
- "name": "Pump Reading Meter Snapshot",
- "module": "Dagaar Fuel Station",
- "custom": 0,
+ "editable_grid": 1,
  "engine": "InnoDB",
- "track_changes": 1,
- "fields": [
-  {
-   "fieldname": "source_shift_closing_line",
-   "label": "Source Shift Closing Line",
-   "fieldtype": "Link",
-   "read_only": 1,
-   "in_list_view": 1,
-   "options": "Shift Closing Line"
-  },
-  {
-   "fieldname": "fuel_pump",
-   "label": "Fuel Pump",
-   "fieldtype": "Link",
-   "options": "Fuel Pump",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "fuel_nozzle",
-   "label": "Fuel Nozzle",
-   "fieldtype": "Link",
-   "options": "Fuel Nozzle",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "item",
-   "label": "Item",
-   "fieldtype": "Link",
-   "options": "Item",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "warehouse",
-   "label": "Warehouse",
-   "fieldtype": "Link",
-   "options": "Warehouse",
-   "read_only": 1
-  },
-  {
-   "fieldname": "uom",
-   "label": "UOM",
-   "fieldtype": "Link",
-   "options": "UOM",
-   "read_only": 1
-  },
-  {
-   "fieldname": "opening_reading",
-   "label": "Previous Reading",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "current_reading",
-   "label": "Current Reading",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "metered_qty",
-   "label": "Metered Qty",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "test_qty",
-   "label": "Test Qty",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "calibration_qty",
-   "label": "Calibration Qty",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "adjustment_qty",
-   "label": "Adjustment Qty",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "billable_qty",
-   "label": "Billable Qty",
-   "fieldtype": "Float",
-   "precision": "3",
-   "read_only": 1
-  },
-  {
-   "fieldname": "rate",
-   "label": "Rate",
-   "fieldtype": "Currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_rate",
-   "fieldtype": "Currency",
-   "label": "Rate (Home)",
-   "options": "parent.home_currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "amount",
-   "label": "Amount",
-   "fieldtype": "Currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "amount_home",
-   "fieldtype": "Currency",
-   "label": "Amount (Home)",
-   "options": "parent.home_currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "pos_profile",
-   "label": "POS Profile",
-   "fieldtype": "Link",
-   "options": "POS Profile",
-   "read_only": 1
-  }
- ],
  "field_order": [
   "source_shift_closing_line",
   "fuel_pump",
@@ -155,8 +24,147 @@
   "amount_home",
   "pos_profile"
  ],
+ "fields": [
+  {
+   "fieldname": "source_shift_closing_line",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source Shift Closing Line",
+   "options": "Shift Closing Line",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fuel_pump",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fuel Pump",
+   "options": "Fuel Pump",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fuel_nozzle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fuel Nozzle",
+   "options": "Fuel Nozzle",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "opening_reading",
+   "fieldtype": "Float",
+   "label": "Previous Reading",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_reading",
+   "fieldtype": "Float",
+   "label": "Current Reading",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "metered_qty",
+   "fieldtype": "Float",
+   "label": "Metered Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "test_qty",
+   "fieldtype": "Float",
+   "label": "Test Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "calibration_qty",
+   "fieldtype": "Float",
+   "label": "Calibration Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "adjustment_qty",
+   "fieldtype": "Float",
+   "label": "Adjustment Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "billable_qty",
+   "fieldtype": "Float",
+   "label": "Billable Qty",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "base_rate",
+   "fieldtype": "Currency",
+   "label": "Rate (Home)",
+   "options": "parent.home_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "amount_home",
+   "fieldtype": "Currency",
+   "label": "Amount (Home)",
+   "options": "parent.home_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "read_only": 1
+  }
+ ],
  "istable": 1,
- "issingle": 0,
- "editable_grid": 1,
- "quick_entry": 0
+ "links": [],
+ "modified": "2026-03-25 22:56:48.394859",
+ "modified_by": "Administrator",
+ "module": "Dagaar Fuel Station",
+ "name": "Pump Reading Meter Snapshot",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

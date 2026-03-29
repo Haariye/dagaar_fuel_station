@@ -1,100 +1,9 @@
 {
+ "actions": [],
+ "creation": "2026-03-24 19:37:42.602137",
  "doctype": "DocType",
- "name": "Pump Reading Credit Allocation",
- "module": "Dagaar Fuel Station",
- "custom": 0,
+ "editable_grid": 1,
  "engine": "InnoDB",
- "track_changes": 1,
- "fields": [
-  {
-   "fieldname": "source_shift_closing_line",
-   "label": "Source Shift Closing Line",
-   "fieldtype": "Data",
-   "reqd": 0,
-   "in_list_view": 0,
-   "read_only": 1,
-   "hidden": 1
-  },
-  {
-   "fieldname": "fuel_pump",
-   "label": "Fuel Pump",
-   "fieldtype": "Link",
-   "options": "Fuel Pump",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "fuel_nozzle",
-   "label": "Fuel Nozzle",
-   "fieldtype": "Link",
-   "options": "Fuel Nozzle",
-   "read_only": 0,
-   "in_list_view": 1,
-   "reqd": 1
-  },
-  {
-   "fieldname": "item",
-   "label": "Item",
-   "fieldtype": "Link",
-   "options": "Item",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "customer",
-   "label": "Customer",
-   "fieldtype": "Link",
-   "options": "Customer",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "qty",
-   "label": "Qty / Litres",
-   "fieldtype": "Float",
-   "precision": "3",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "uom",
-   "label": "UOM",
-   "fieldtype": "Link",
-   "options": "UOM",
-   "read_only": 1
-  },
-  {
-   "fieldname": "rate",
-   "label": "Rate",
-   "fieldtype": "Currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "base_rate",
-   "fieldtype": "Currency",
-   "label": "Rate (Home)",
-   "options": "parent.home_currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "amount",
-   "label": "Amount",
-   "fieldtype": "Currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "amount_home",
-   "fieldtype": "Currency",
-   "label": "Amount (Home)",
-   "options": "parent.home_currency",
-   "read_only": 1
-  },
-  {
-   "fieldname": "notes",
-   "label": "Notes",
-   "fieldtype": "Small Text"
-  }
- ],
  "field_order": [
   "source_shift_closing_line",
   "fuel_pump",
@@ -109,8 +18,104 @@
   "amount_home",
   "notes"
  ],
+ "fields": [
+  {
+   "fieldname": "source_shift_closing_line",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Source Shift Closing Line",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fuel_pump",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fuel Pump",
+   "options": "Fuel Pump",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fuel_nozzle",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fuel Nozzle",
+   "options": "Fuel Nozzle",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty / Litres",
+   "precision": "3",
+   "reqd": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "base_rate",
+   "fieldtype": "Currency",
+   "label": "Rate (Home)",
+   "options": "parent.home_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "amount_home",
+   "fieldtype": "Currency",
+   "label": "Amount (Home)",
+   "options": "parent.home_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
  "istable": 1,
- "issingle": 0,
- "editable_grid": 1,
- "quick_entry": 0
+ "links": [],
+ "modified": "2026-03-25 22:56:09.876895",
+ "modified_by": "Administrator",
+ "module": "Dagaar Fuel Station",
+ "name": "Pump Reading Credit Allocation",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }
