@@ -117,25 +117,8 @@ def get_item_rate(item_code, price_list, uom=None, customer=None, company=None, 
 
 
 def get_last_nozzle_closing(nozzle):
-    """Get the current confirmed meter reading for a nozzle.
-
-    NEW: reads from the Nozzle Meter Ledger (stable per-nozzle state).
-    Falls back to the old query method ONLY if the ledger table does not
-    exist yet (pre-migration), then falls back to initial_opening_reading.
-    """
     if not nozzle:
         return 0
-
-    # Primary: read from the nozzle meter ledger
-    try:
-        from dagaar_fuel_station.dagaar_fuel_station.nozzle_meter_state import (
-            get_current_reading,
-        )
-        return get_current_reading(nozzle)
-    except Exception:
-        pass
-
-    # Fallback: old query (only used before migration is run)
     rows = frappe.db.sql(
         """
         select scl.closing_reading

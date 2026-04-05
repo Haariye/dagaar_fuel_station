@@ -1,54 +1,54 @@
 {
  "actions": [],
- "creation": "2026-03-30 18:51:48.283379",
+ "autoname": "format:{fuel_nozzle}-{date}-{#####}",
+ "creation": "2026-03-15 19:39:59.430125",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "source_shift_closing_line",
   "fuel_pump",
   "fuel_nozzle",
+  "display_name",
   "item",
-  "warehouse",
   "uom",
+  "warehouse",
   "opening_reading",
-  "current_reading",
+  "closing_reading",
   "metered_qty",
   "test_qty",
   "calibration_qty",
   "adjustment_qty",
-  "billable_qty",
+  "net_billable_qty",
   "rate",
   "base_rate",
-  "amount",
-  "amount_home",
-  "pos_profile"
+  "gross_amount",
+  "gross_amount_home",
+  "net_billable_amount",
+  "net_billable_amount_home",
+  "notes",
+  "date"
  ],
  "fields": [
   {
-   "fieldname": "source_shift_closing_line",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Source Shift Closing Line",
-   "options": "Shift Closing Line",
-   "read_only": 1
-  },
-  {
-   "columns": 1,
    "fieldname": "fuel_pump",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Fuel Pump",
-   "options": "Fuel Pump",
-   "read_only": 1
+   "options": "Fuel Pump"
   },
   {
-   "columns": 1,
    "fieldname": "fuel_nozzle",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Fuel Nozzle",
    "options": "Fuel Nozzle",
+   "reqd": 1
+  },
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Display Name",
    "read_only": 1
   },
   {
@@ -60,13 +60,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "warehouse",
-   "fieldtype": "Link",
-   "label": "Warehouse",
-   "options": "Warehouse",
-   "read_only": 1
-  },
-  {
    "fieldname": "uom",
    "fieldtype": "Link",
    "label": "UOM",
@@ -74,20 +67,26 @@
    "read_only": 1
   },
   {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
    "fieldname": "opening_reading",
    "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": "Previous Reading",
+   "label": "Opening Reading",
    "precision": "3",
    "read_only": 1
   },
   {
-   "fieldname": "current_reading",
+   "fieldname": "closing_reading",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Current Reading",
+   "label": "Closing Reading",
    "precision": "3",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fieldname": "metered_qty",
@@ -98,30 +97,30 @@
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "test_qty",
    "fieldtype": "Float",
    "label": "Test Qty",
-   "precision": "3",
-   "read_only": 1
+   "precision": "3"
   },
   {
+   "default": "0",
    "fieldname": "calibration_qty",
    "fieldtype": "Float",
    "label": "Calibration Qty",
-   "precision": "3",
-   "read_only": 1
+   "precision": "3"
   },
   {
+   "default": "0",
    "fieldname": "adjustment_qty",
    "fieldtype": "Float",
    "label": "Adjustment Qty",
-   "precision": "3",
-   "read_only": 1
+   "precision": "3"
   },
   {
-   "fieldname": "billable_qty",
+   "fieldname": "net_billable_qty",
    "fieldtype": "Float",
-   "label": "Billable Qty",
+   "label": "Net Billable Qty",
    "precision": "3",
    "read_only": 1
   },
@@ -139,37 +138,58 @@
    "read_only": 1
   },
   {
-   "fieldname": "amount",
+   "fieldname": "gross_amount",
    "fieldtype": "Currency",
-   "label": "Amount",
+   "label": "Gross Amount",
    "read_only": 1
   },
   {
-   "allow_on_submit": 1,
-   "fieldname": "amount_home",
+   "fieldname": "gross_amount_home",
    "fieldtype": "Currency",
-   "label": "Amount (Home)",
+   "label": "Gross Amount (Home)",
    "options": "parent.home_currency",
    "read_only": 1
   },
   {
-   "fieldname": "pos_profile",
-   "fieldtype": "Link",
-   "label": "POS Profile",
-   "options": "POS Profile",
+   "fieldname": "net_billable_amount",
+   "fieldtype": "Currency",
+   "label": "Net Billable Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "net_billable_amount_home",
+   "fieldtype": "Currency",
+   "label": "Net Billable Amount (Home)",
+   "options": "parent.home_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-03-30 22:41:07.318567",
+ "modified": "2026-03-15 22:06:15.477813",
  "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
- "name": "Pump Reading Meter Snapshot",
+ "name": "Shift Closing Line",
+ "naming_rule": "By script",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
+ "search_fields": "display_name,fuel_nozzle,item,fuel_pump",
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "display_name",
  "track_changes": 1
 }

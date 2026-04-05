@@ -10,9 +10,6 @@
   "pos_profile",
   "posting_time",
   "shift",
-  "opening_cash_float_home",
-  "actual_cash_on_hand",
-  "actual_cash_on_hand_home",
   "column_break_uorx",
   "company",
   "status",
@@ -20,13 +17,16 @@
   "home_currency",
   "conversion_rate",
   "opening_cash_float",
-  "cash_over_short",
+  "opening_cash_float_home",
+  "actual_cash_on_hand",
+  "actual_cash_on_hand_home",
   "column_break_zuh3",
   "naming_series",
   "date",
   "pump_reading_entry",
   "expected_cash_amount",
   "expected_cash_amount_home",
+  "cash_over_short",
   "cash_over_short_home",
   "section_lines",
   "lines",
@@ -115,7 +115,8 @@
    "fieldname": "currency",
    "fieldtype": "Link",
    "label": "Currency",
-   "options": "Currency"
+   "options": "Currency",
+   "read_only": 1
   },
   {
    "fieldname": "home_currency",
@@ -125,12 +126,11 @@
    "read_only": 1
   },
   {
-   "default": "1",
    "fieldname": "conversion_rate",
    "fieldtype": "Float",
    "label": "Exchange Rate",
    "precision": "9",
-   "read_only": 1
+   "default": "1"
   },
   {
    "fieldname": "opening_cash_float",
@@ -279,8 +279,8 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-24 19:50:28.223590",
- "modified_by": "Administrator",
+ "modified": "2026-03-16 22:50:56.943381",
+ "modified_by": "sysadmin@naleye.dagaarsoft.app",
  "module": "Dagaar Fuel Station",
  "name": "Shift Closing Entry",
  "naming_rule": "By \"Naming Series\" field",

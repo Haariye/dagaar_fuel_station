@@ -92,53 +92,6 @@ function load_station_nozzles(frm) {
     });
 }
 
-function show_meter_diagnostics(frm) {
-    frappe.call({
-        method: 'dagaar_fuel_station.dagaar_fuel_station.nozzle_meter_state.get_shift_diagnostics',
-        args: { shift_closing_entry: frm.doc.name },
-        callback: function(r) {
-            if (!r.message || !r.message.length) {
-                frappe.msgprint(__('No diagnostic data available.'));
-                return;
-            }
-            let html = '<table class="table table-bordered table-condensed" style="font-size:12px">';
-            html += '<thead><tr>';
-            html += '<th>Nozzle</th>';
-            html += '<th>Ledger Reading</th>';
-            html += '<th>Doc Opening</th>';
-            html += '<th>Match</th>';
-            html += '<th>Doc Closing</th>';
-            html += '<th>Metered Qty</th>';
-            html += '<th>Sold Qty</th>';
-            html += '<th>Cumulative Sold</th>';
-            html += '<th>Last Source</th>';
-            html += '</tr></thead><tbody>';
-            r.message.forEach(d => {
-                const match_class = d.opening_match ? 'text-success' : 'text-danger';
-                const match_text = d.opening_match ? '✓' : '✗ MISMATCH';
-                html += '<tr>';
-                html += '<td><strong>' + (d.display_name || d.nozzle) + '</strong></td>';
-                html += '<td>' + d.ledger_current_reading + '</td>';
-                html += '<td>' + d.document_opening_reading + '</td>';
-                html += '<td class="' + match_class + '"><strong>' + match_text + '</strong></td>';
-                html += '<td>' + d.document_closing_reading + '</td>';
-                html += '<td>' + d.document_metered_qty + '</td>';
-                html += '<td>' + d.document_sold_qty + '</td>';
-                html += '<td>' + d.cumulative_sold_qty + '</td>';
-                html += '<td>' + (d.last_source_document || '-') + '</td>';
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-            frappe.msgprint({
-                title: __('Meter Diagnostics – {0}', [frm.doc.name]),
-                message: html,
-                indicator: 'blue',
-                wide: true
-            });
-        }
-    });
-}
-
 frappe.ui.form.on('Shift Closing Entry', {
     setup(frm) {
         frm.set_query('pos_profile', () => ({ filters: { company: frm.doc.company } }));
@@ -158,12 +111,6 @@ frappe.ui.form.on('Shift Closing Entry', {
             frm.add_custom_button(__('Refresh Opening Readings'), function() {
                 refresh_opening_readings(frm);
             });
-        }
-        // Meter Diagnostics button – visible on submitted docs for managers
-        if (frm.doc.docstatus === 1 && (frappe.user_roles.includes('System Manager') || frappe.user_roles.includes('Sales Manager'))) {
-            frm.add_custom_button(__('Meter Diagnostics'), function() {
-                show_meter_diagnostics(frm);
-            }, __('Tools'));
         }
     },
     onload(frm) {

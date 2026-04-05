@@ -76,66 +76,10 @@ class ShiftClosingEntry(Document):
         self.set_status()
 
     def on_submit(self):
-        # Refresh opening readings from ledger one final time at submit
-        # to catch any changes between validate and submit
-        self._refresh_opening_from_ledger()
-        self.calculate_lines()
-        self.validate_lines()
-        self.calculate_totals()
-
-        # Record to the nozzle meter ledger
-        try:
-            from dagaar_fuel_station.dagaar_fuel_station.nozzle_meter_state import (
-                record_shift_closing,
-            )
-            record_shift_closing(self)
-        except Exception as e:
-            frappe.log_error(
-                f"Failed to record meter ledger on submit of {self.name}: {e}",
-                "Nozzle Meter Ledger Error",
-            )
-            frappe.throw(
-                _("Failed to update nozzle meter ledger. Please contact administrator. Error: {0}").format(str(e))
-            )
-
         self.db_set("status", "Open", update_modified=False)
 
     def on_cancel(self):
-        # Reverse the nozzle meter ledger entries
-        try:
-            from dagaar_fuel_station.dagaar_fuel_station.nozzle_meter_state import (
-                reverse_shift_closing,
-            )
-            reverse_shift_closing(self)
-        except Exception as e:
-            frappe.log_error(
-                f"Failed to reverse meter ledger on cancel of {self.name}: {e}",
-                "Nozzle Meter Ledger Error",
-            )
-            frappe.throw(
-                _("Failed to reverse nozzle meter ledger. Please contact administrator. Error: {0}").format(str(e))
-            )
-
         self.db_set("status", "Cancelled", update_modified=False)
-
-    def _refresh_opening_from_ledger(self):
-        """At submit time, re-read opening readings from the ledger to ensure
-        they haven't drifted since the form was last validated."""
-        for row in self.lines:
-            if not row.fuel_nozzle:
-                continue
-            ledger_reading = get_last_nozzle_closing(row.fuel_nozzle)
-            if abs(flt(row.opening_reading) - ledger_reading) > 0.001:
-                frappe.msgprint(
-                    _("Opening reading for {0} updated from {1} to {2} (ledger state).").format(
-                        row.display_name or row.fuel_nozzle,
-                        flt(row.opening_reading),
-                        ledger_reading,
-                    ),
-                    alert=True,
-                )
-                row.opening_reading = ledger_reading
-                row.db_set("opening_reading", ledger_reading, update_modified=False)
 
     def set_currency_context(self):
         ctx = get_currency_context(self.company, self.currency, self.date)

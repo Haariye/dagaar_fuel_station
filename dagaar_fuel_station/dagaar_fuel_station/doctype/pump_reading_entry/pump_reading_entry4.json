@@ -29,21 +29,19 @@
   "section_totals",
   "total_metered_qty",
   "total_billable_qty",
-  "column_break_moom",
   "total_credit_qty",
-  "total_credit_amount_home",
   "total_cash_qty",
-  "cash_totals_section",
-  "additional_discount_amount",
-  "total_cash_amount_home",
-  "total_cash_amount",
-  "actual_cash_received_home",
   "total_credit_amount",
+  "total_credit_amount_home",
   "column_break_k6bm",
-  "actual_cash_received",
-  "cash_over_short",
-  "total_amount_home",
+  "total_cash_amount",
+  "total_cash_amount_home",
   "total_amount",
+  "total_amount_home",
+  "additional_discount_amount",
+  "actual_cash_received",
+  "actual_cash_received_home",
+  "cash_over_short",
   "cash_over_short_home",
   "section_invoices",
   "invoice_references",
@@ -146,10 +144,9 @@
    "read_only": 1
   },
   {
-   "collapsible": 1,
    "fieldname": "section_totals",
    "fieldtype": "Section Break",
-   "label": "Credit Totals"
+   "label": "Totals"
   },
   {
    "allow_on_submit": 1,
@@ -164,15 +161,15 @@
    "fieldname": "total_billable_qty",
    "fieldtype": "Float",
    "label": "Total Billable Qty",
-   "precision": "9",
+   "precision": "3",
    "read_only": 1
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "total_credit_qty",
    "fieldtype": "Float",
    "label": "Total Credit Qty",
-   "precision": "3"
+   "precision": "3",
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
@@ -188,7 +185,6 @@
    "fieldtype": "Currency",
    "label": "Total Credit Amount",
    "options": "currency",
-   "precision": "9",
    "read_only": 1
   },
   {
@@ -216,12 +212,10 @@
    "read_only": 1
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Amount",
    "options": "currency",
-   "precision": "9",
    "read_only": 1
   },
   {
@@ -231,6 +225,13 @@
    "label": "Total Amount (Home)",
    "options": "home_currency",
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "additional_discount_amount",
+   "fieldtype": "Currency",
+   "label": "Additional Discount Amount",
+   "options": "currency"
   },
   {
    "fieldname": "actual_cash_received",
@@ -340,28 +341,11 @@
   {
    "fieldname": "section_break_citj",
    "fieldtype": "Section Break"
-  },
-  {
-   "allow_on_submit": 1,
-   "default": "0",
-   "fieldname": "additional_discount_amount",
-   "fieldtype": "Currency",
-   "label": "Additional Discount Amount",
-   "options": "currency"
-  },
-  {
-   "fieldname": "cash_totals_section",
-   "fieldtype": "Section Break",
-   "label": "Cash Totals"
-  },
-  {
-   "fieldname": "column_break_moom",
-   "fieldtype": "Column Break"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-01 19:19:47.022323",
+ "modified": "2026-03-26 14:18:14.349930",
  "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
  "name": "Pump Reading Entry",
