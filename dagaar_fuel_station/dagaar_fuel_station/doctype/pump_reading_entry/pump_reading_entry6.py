@@ -405,19 +405,6 @@ class PumpReadingEntry(Document):
         inv.fuel_pump = ", ".join(sorted({(d.fuel_pump or "") for d in rows if d.fuel_pump}))
         inv.fuel_nozzle = ", ".join(sorted({(d.fuel_nozzle or "") for d in rows if d.fuel_nozzle}))
 
-        # ── Push credit allocation notes into Sales Invoice remarks ──
-        remarks_parts = []
-        if sale_type == "Credit":
-            for row in rows:
-                note_text = (getattr(row, "notes", None) or "").strip()
-                if note_text:
-                    remarks_parts.append(
-                        f"[{row.customer} | {row.fuel_nozzle} | {row.item} | Qty {flt(row.qty):.3f}]: {note_text}"
-                    )
-        if remarks_parts:
-            inv.remarks = "\n".join(remarks_parts)
-        # ── End notes push ──
-
         for row in rows:
             is_credit = row.doctype == "Pump Reading Credit Allocation"
             qty = flt(row.qty if is_credit else row.cash_qty)

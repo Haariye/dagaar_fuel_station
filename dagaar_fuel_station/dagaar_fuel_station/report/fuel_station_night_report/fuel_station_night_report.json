@@ -1,0 +1,10 @@
+{
+  "doctype": "Report",
+  "name": "Fuel Station Night Report",
+  "module": "Dagaar Fuel Station",
+  "report_name": "Fuel Station Night Report",
+  "ref_doctype": "Sales Invoice",
+  "report_type": "Script Report",
+  "is_standard": "Yes",
+  "json": "{}"
+}
