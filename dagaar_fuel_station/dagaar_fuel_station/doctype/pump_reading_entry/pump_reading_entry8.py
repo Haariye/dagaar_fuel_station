@@ -12,6 +12,7 @@ from dagaar_fuel_station.dagaar_fuel_station.utils import (
     get_item_rate,
     get_last_nozzle_closing,
     get_pos_price_list,
+    get_customer_price_list,
     validate_company_for_pos_profile,
 )
 
@@ -236,7 +237,15 @@ class PumpReadingEntry(Document):
             row.fuel_nozzle = snap.fuel_nozzle
             row.item = snap.item
             row.uom = snap.uom
-            row.rate = flt(row.rate) or flt(snap.rate)
+            row.rate = get_item_rate(
+                item_code=snap.item,
+                uom=snap.uom,
+                customer=row.customer,
+                pos_profile=self.pos_profile,
+                company=self.company,
+                posting_date=self.date,
+                target_currency=self.currency,
+            ) or snap.rate
             row.base_rate = flt(row.rate) * flt(self.conversion_rate)
             row.amount = flt(row.qty) * flt(row.rate)
             row.amount_home = flt(row.amount) * flt(self.conversion_rate)
@@ -389,6 +398,7 @@ class PumpReadingEntry(Document):
     def _build_sales_invoice(self, customer, sale_type, rows):
         inv = frappe.new_doc("Sales Invoice")
         inv.customer = customer
+        inv.selling_price_list = get_customer_price_list(customer=customer, pos_profile=self.pos_profile)
         inv.company = self.company
         inv.posting_date = self.date
         inv.due_date = self.date

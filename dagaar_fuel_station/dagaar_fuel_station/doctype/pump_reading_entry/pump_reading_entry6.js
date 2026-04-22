@@ -51,29 +51,12 @@ function sync_credit_row(frm, cdt, cdn) {
         row.fuel_nozzle = source.fuel_nozzle;
         row.item = source.item;
         row.uom = source.uom;
+        row.rate = source.rate;
+        row.base_rate = source.base_rate;
+        row.amount = flt(row.qty) * flt(row.rate);
+        row.amount_home = flt(row.amount) * flt(frm.doc.conversion_rate || 1);
         row.discount_amount = flt(row.discount_amount);
-
-        frappe.call({
-            method: 'dagaar_fuel_station.dagaar_fuel_station.utils.get_item_rate',
-            args: {
-                item_code: row.item,
-                uom: row.uom,
-                customer: row.customer,
-                company: frm.doc.company,
-                posting_date: frm.doc.date,
-                target_currency: frm.doc.currency,
-                pos_profile: frm.doc.pos_profile
-            },
-            callback: function(r) {
-                row.rate = flt(r.message || source.rate);
-                row.base_rate = flt(row.rate) * flt(frm.doc.conversion_rate || 1);
-                row.amount = flt(row.qty) * flt(row.rate);
-                row.amount_home = flt(row.amount) * flt(frm.doc.conversion_rate || 1);
-                frm.refresh_field('credit_allocations');
-                recompute_cash_summary(frm);
-            }
-        });
-        return;
+        frm.refresh_field('credit_allocations');
     }
     recompute_cash_summary(frm);
 }

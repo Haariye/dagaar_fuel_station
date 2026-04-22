@@ -236,8 +236,8 @@ class PumpReadingEntry(Document):
             row.fuel_nozzle = snap.fuel_nozzle
             row.item = snap.item
             row.uom = snap.uom
-            row.rate = flt(row.rate) or flt(snap.rate)
-            row.base_rate = flt(row.rate) * flt(self.conversion_rate)
+            row.rate = snap.rate
+            row.base_rate = snap.base_rate
             row.amount = flt(row.qty) * flt(row.rate)
             row.amount_home = flt(row.amount) * flt(self.conversion_rate)
             row.discount_amount = flt(row.discount_amount)
@@ -361,12 +361,9 @@ class PumpReadingEntry(Document):
         if self.invoice_references:
             frappe.throw(_("Invoices already created for this Pump Reading Entry."))
         created = []
-        grouped = {}
         for row in self.credit_allocations:
-            grouped.setdefault(row.customer, []).append(row)
-        for customer, rows in grouped.items():
-            inv = self._build_sales_invoice(customer, "Credit", rows)
-            created.append((inv, "Credit", customer, rows))
+            inv = self._build_sales_invoice(row.customer, "Credit", [row])
+            created.append((inv, "Credit", row.customer, [row]))
         cash_rows = [d for d in self.cash_summaries if flt(d.cash_qty) > 0]
         if cash_rows:
             inv = self._build_sales_invoice(get_cash_customer(), "Cash", cash_rows)

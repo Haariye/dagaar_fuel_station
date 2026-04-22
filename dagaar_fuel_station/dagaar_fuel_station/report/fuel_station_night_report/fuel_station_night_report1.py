@@ -81,21 +81,19 @@ def execute(filters=None):
     gap()
 
     # ── 2. Stock Balance ──
-    heading("2. Stock Balance by Warehouse", ["Item", "Warehouse", "UOM", "Opening Qty", "In Qty", "Out Qty", "Balance Qty"])
+    heading("2. Stock Balance by Warehouse", ["Item", "Warehouse", "Qty", "UOM", "Val. Rate", "Stock Value"])
     for r in ctx["stock_balance"]:
-        add_row([r["item_code"], r["warehouse"], r.get("stock_uom", ""),
-                 f3(r.get("opening_qty", 0)), f3(r.get("in_qty", 0)),
-                 f3(r.get("out_qty", 0)), f3(r.get("balance_qty", 0))])
+        add_row([r["item_code"], r["warehouse"], f3(r["actual_qty"]),
+                 r.get("stock_uom", ""), f2(r.get("valuation_rate", 0)), f2(r.get("stock_value", 0))])
     gap()
 
-    # ── 3. Nozzle Readings (pivoted) ──
+    # ── 3. Nozzle Readings ──
     heading("3. Nozzle Meter Readings",
-            ["Pump", "Nozzle", "Item", "Morn Open", "Morn Close", "Eve Open", "Eve Close", "Tot Metered"])
+            ["Shift", "Pump", "Nozzle", "Item", "Opening", "Closing", "Billable", "Amount"])
     for r in ctx["nozzle_readings"]:
-        add_row([r.get("fuel_pump", ""), r.get("fuel_nozzle", ""), r.get("item", ""),
-                 f3(r.get("morning_open", 0)), f3(r.get("morning_close", 0)),
-                 f3(r.get("evening_open", 0)), f3(r.get("evening_close", 0)),
-                 f3(r.get("total_metered", 0))])
+        add_row([r.get("shift", ""), r.get("fuel_pump", ""), r.get("fuel_nozzle", ""),
+                 r.get("item", ""), f3(r.get("opening", 0)), f3(r.get("closing", 0)),
+                 f3(r.get("billable_qty", 0)), f2(r.get("amount", 0))])
     gap()
 
     # ── 4. Credit Sales ──
@@ -320,55 +318,32 @@ def _build_report_context(filters):
         {"label": "Cash Over/Short",                        "formatted": _f(cash_over_short),         "amount": cash_over_short},
     ]
 
-    # ── 2. STOCK BALANCE (uses ERPNext's own Stock Balance report) ──
-    stock_balance = _get_stock_balance(p, company)
+    # ── 2. STOCK BALANCE ─────────────────────
+    stock_balance = frappe.db.sql("""
+        SELECT bin.item_code, bin.warehouse, bin.actual_qty,
+               bin.stock_uom, bin.valuation_rate, bin.stock_value
+        FROM `tabBin` bin
+        WHERE bin.actual_qty != 0
+          AND (bin.warehouse LIKE '%%Ceelka Shidaalka%%' OR bin.warehouse LIKE '%%Fuel%%'
+               OR bin.warehouse IN (
+                   SELECT DISTINCT fn.warehouse FROM `tabFuel Nozzle` fn
+                   WHERE IFNULL(fn.warehouse,'') != ''))
+        ORDER BY bin.warehouse, bin.item_code
+    """, as_dict=True)
 
-    # ── 3. NOZZLE READINGS (pivoted: one row per nozzle, shifts horizontal) ──
-    _raw_nozzle = frappe.db.sql("""
-        SELECT scl.fuel_nozzle, scl.fuel_pump, scl.item,
+    # ── 3. NOZZLE READINGS ───────────────────
+    nozzle_readings = frappe.db.sql("""
+        SELECT scl.fuel_nozzle, scl.fuel_pump, scl.item, scl.warehouse,
                scl.opening_reading AS opening, scl.closing_reading AS closing,
-               scl.metered_qty, sce.shift
+               scl.metered_qty, scl.test_qty, scl.calibration_qty,
+               scl.adjustment_qty, scl.net_billable_qty AS billable_qty,
+               scl.rate, scl.net_billable_amount AS amount,
+               sce.shift, sce.attendant
         FROM `tabShift Closing Line` scl
         INNER JOIN `tabShift Closing Entry` sce ON sce.name=scl.parent
         WHERE sce.docstatus=1 AND sce.date BETWEEN %(from_date)s AND %(to_date)s
-        ORDER BY scl.fuel_pump, scl.fuel_nozzle, FIELD(sce.shift, 'Morning', 'Evening', 'Night')
+        ORDER BY sce.shift, scl.fuel_pump, scl.fuel_nozzle
     """, p, as_dict=True)
-
-    # Pivot: group by nozzle, spread shifts horizontally
-    from collections import OrderedDict
-    _nozzle_map = OrderedDict()
-    for r in _raw_nozzle:
-        key = r.get("fuel_nozzle", "")
-        if key not in _nozzle_map:
-            _nozzle_map[key] = {
-                "fuel_nozzle": key,
-                "fuel_pump": r.get("fuel_pump", ""),
-                "item": r.get("item", ""),
-                "morning_open": 0, "morning_close": 0, "morning_metered": 0,
-                "evening_open": 0, "evening_close": 0, "evening_metered": 0,
-                "night_open": 0, "night_close": 0, "night_metered": 0,
-                "total_metered": 0,
-            }
-        shift = cstr(r.get("shift", "")).strip()
-        metered = flt(r.get("metered_qty", 0))
-        opening = flt(r.get("opening", 0))
-        closing = flt(r.get("closing", 0))
-
-        if shift == "Morning":
-            _nozzle_map[key]["morning_open"] = opening
-            _nozzle_map[key]["morning_close"] = closing
-            _nozzle_map[key]["morning_metered"] = metered
-        elif shift == "Evening":
-            _nozzle_map[key]["evening_open"] = opening
-            _nozzle_map[key]["evening_close"] = closing
-            _nozzle_map[key]["evening_metered"] = metered
-        elif shift == "Night":
-            _nozzle_map[key]["night_open"] = opening
-            _nozzle_map[key]["night_close"] = closing
-            _nozzle_map[key]["night_metered"] = metered
-        _nozzle_map[key]["total_metered"] += metered
-
-    nozzle_readings = list(_nozzle_map.values())
 
     # ── 4. CREDIT SALES ──────────────────────
     credit_sales = frappe.db.sql(f"""
@@ -460,100 +435,6 @@ def _build_report_context(filters):
         "payment_entries": payment_entries,
         "trial_balance": trial_balance,
     }
-
-
-def _get_stock_balance(params, company):
-    """Fetch stock balance for ALL warehouses, all items, even if zero.
-
-    Strategy:
-    - tabBin gives the authoritative current balance for every item+warehouse
-      combo that has ever had stock (includes Stock Reconciliation, all doctypes).
-    - tabStock Ledger Entry gives In/Out movements within the selected date range.
-    - Opening = Balance − In + Out  (derived, always correct).
-
-    This guarantees Reserve tanks, transit warehouses, and anything with only
-    a Stock Reconciliation opening will appear.
-    """
-    co_sle = "AND sle.company = %(company)s" if company else ""
-
-    # Step 1: ALL item+warehouse from Bin (no filters — show everything)
-    bin_rows = frappe.db.sql("""
-        SELECT bin.item_code, bin.warehouse, bin.stock_uom, bin.actual_qty
-        FROM `tabBin` bin
-        ORDER BY bin.warehouse, bin.item_code
-    """, as_dict=True)
-
-    # Step 2: Period In/Out from SLE within date range
-    sle_rows = frappe.db.sql(f"""
-        SELECT
-            sle.item_code,
-            sle.warehouse,
-            SUM(CASE WHEN sle.actual_qty > 0 THEN sle.actual_qty ELSE 0 END) AS in_qty,
-            SUM(CASE WHEN sle.actual_qty < 0 THEN ABS(sle.actual_qty) ELSE 0 END) AS out_qty
-        FROM `tabStock Ledger Entry` sle
-        WHERE sle.is_cancelled = 0
-          AND sle.posting_date BETWEEN %(from_date)s AND %(to_date)s
-          {co_sle}
-        GROUP BY sle.item_code, sle.warehouse
-    """, params, as_dict=True)
-
-    # Step 3: SLE movements AFTER to_date (to derive balance as-of to_date from current Bin balance)
-    after_rows = frappe.db.sql(f"""
-        SELECT
-            sle.item_code,
-            sle.warehouse,
-            SUM(sle.actual_qty) AS after_qty
-        FROM `tabStock Ledger Entry` sle
-        WHERE sle.is_cancelled = 0
-          AND sle.posting_date > %(to_date)s
-          {co_sle}
-        GROUP BY sle.item_code, sle.warehouse
-    """, params, as_dict=True)
-
-    # Build lookup maps
-    sle_map = {}
-    for r in sle_rows:
-        sle_map[(r["item_code"], r["warehouse"])] = {
-            "in_qty": flt(r["in_qty"]),
-            "out_qty": flt(r["out_qty"]),
-        }
-
-    after_map = {}
-    for r in after_rows:
-        after_map[(r["item_code"], r["warehouse"])] = flt(r["after_qty"])
-
-    # Merge
-    results = []
-    for b in bin_rows:
-        key = (b["item_code"], b["warehouse"])
-        current_bin_qty = flt(b["actual_qty"])
-
-        # Balance as of to_date = current Bin qty minus anything that happened after to_date
-        balance_as_of_to_date = current_bin_qty - after_map.get(key, 0)
-
-        in_qty = sle_map.get(key, {}).get("in_qty", 0)
-        out_qty = sle_map.get(key, {}).get("out_qty", 0)
-
-        # Opening = Balance − In + Out
-        opening_qty = balance_as_of_to_date - in_qty + out_qty
-
-        row = {
-            "item_code": b["item_code"],
-            "warehouse": b["warehouse"],
-            "stock_uom": b.get("stock_uom", ""),
-            "opening_qty": flt(opening_qty, 3),
-            "in_qty": flt(in_qty, 3),
-            "out_qty": flt(out_qty, 3),
-            "balance_qty": flt(balance_as_of_to_date, 3),
-        }
-
-        # Skip rows where everything is zero (removes irrelevant item+warehouse combos)
-        if not (row["opening_qty"] or row["in_qty"] or row["out_qty"] or row["balance_qty"]):
-            continue
-
-        results.append(row)
-
-    return results
 
 
 def _get_cash_trial_balance(params, company):
@@ -714,89 +595,51 @@ def _render_html(ctx, filters):
     #  2. STOCK BALANCE
     # ═══════════════════════════════════════════
     parts.append('<div class="section">')
-    parts.append('<div class="section-title">2. Stock Balance by Warehouse</div>')
+    parts.append('<div class="section-title">2. Stock Balance by Warehouse (Ceelka Shidaalka)</div>')
     sb = ctx["stock_balance"]
     if sb:
         sb_rows = []
-        t_open = t_in = t_out = t_bal = 0
+        t_q = t_v = 0
         for r in sb:
-            oq = flt(r.get("opening_qty", 0)); iq = flt(r.get("in_qty", 0))
-            oq2 = flt(r.get("out_qty", 0)); bq = flt(r.get("balance_qty", 0))
-            t_open += oq; t_in += iq; t_out += oq2; t_bal += bq
-            sb_rows.append([r["item_code"], r["warehouse"], r.get("stock_uom", ""),
-                            f3(oq), f3(iq), f3(oq2), f3(bq)])
+            q = flt(r["actual_qty"]); v = flt(r.get("stock_value", 0))
+            t_q += q; t_v += v
+            sb_rows.append([r["item_code"], r["warehouse"], f3(q),
+                            r.get("stock_uom", ""), f2(r.get("valuation_rate", 0)), f2(v)])
         parts.append(tbl(
-            ["Item", "Warehouse", "UOM", "Opening Qty", "In Qty", "Out Qty", "Balance Qty"],
-            sb_rows, ["l", "l", "l", "r", "r", "r", "r"],
-            total_row=["TOTAL", "", "", f3(t_open), f3(t_in), f3(t_out), f3(t_bal)],
-            footer="Source: Stock Ledger Entry – all warehouses, filtered by report date range"
+            ["Item", "Warehouse", "Qty", "UOM", "Val. Rate", "Stock Value"],
+            sb_rows, ["l", "l", "r", "l", "r", "r"],
+            total_row=["TOTAL", "", f3(t_q), "", "", f2(t_v)],
+            footer="Source: Bin (Stock Ledger) – Fuel station and nozzle warehouses"
         ))
     else:
-        parts.append("<p><i>No stock movements found.</i></p>")
+        parts.append("<p><i>No stock found in fuel warehouses.</i></p>")
     parts.append('</div>')
 
     # ═══════════════════════════════════════════
-    #  3. NOZZLE READINGS (pivoted – one row per nozzle)
+    #  3. NOZZLE READINGS
     # ═══════════════════════════════════════════
     parts.append('<div class="section">')
     parts.append('<div class="section-title">3. Nozzle Meter Readings</div>')
     nr = ctx["nozzle_readings"]
     if nr:
-        # Build a custom table with two-level header (shift groups)
-        nr_html = """<table>
-        <thead>
-            <tr>
-                <th rowspan="2">Pump</th>
-                <th rowspan="2">Nozzle</th>
-                <th rowspan="2">Item</th>
-                <th colspan="3" style="text-align:center;border-left:1.5px solid #fff">Morning</th>
-                <th colspan="3" style="text-align:center;border-left:1.5px solid #fff">Evening</th>
-                <th colspan="3" style="text-align:center;border-left:1.5px solid #fff">Night</th>
-                <th rowspan="2" class="r" style="border-left:1.5px solid #fff">Total Metered</th>
-            </tr>
-            <tr>
-                <th class="r" style="border-left:1.5px solid #fff">Open</th>
-                <th class="r">Close</th>
-                <th class="r">Metered</th>
-                <th class="r" style="border-left:1.5px solid #fff">Open</th>
-                <th class="r">Close</th>
-                <th class="r">Metered</th>
-                <th class="r" style="border-left:1.5px solid #fff">Open</th>
-                <th class="r">Close</th>
-                <th class="r">Metered</th>
-            </tr>
-        </thead><tbody>"""
-        total_metered = 0
-        for i, r in enumerate(nr):
-            cls = ' class="alt"' if i % 2 == 1 else ""
-            tm = flt(r.get("total_metered", 0))
-            total_metered += tm
-            bdr = 'style="border-left:1.5px solid #e0e0e0"'
-            nr_html += f"""<tr{cls}>
-                <td>{r.get("fuel_pump","")}</td>
-                <td>{r.get("fuel_nozzle","")}</td>
-                <td>{r.get("item","")}</td>
-                <td class="r" {bdr}>{f3(r.get("morning_open",0))}</td>
-                <td class="r">{f3(r.get("morning_close",0))}</td>
-                <td class="r">{f3(r.get("morning_metered",0))}</td>
-                <td class="r" {bdr}>{f3(r.get("evening_open",0))}</td>
-                <td class="r">{f3(r.get("evening_close",0))}</td>
-                <td class="r">{f3(r.get("evening_metered",0))}</td>
-                <td class="r" {bdr}>{f3(r.get("night_open",0))}</td>
-                <td class="r">{f3(r.get("night_close",0))}</td>
-                <td class="r">{f3(r.get("night_metered",0))}</td>
-                <td class="rb" {bdr}>{f3(tm)}</td>
-            </tr>"""
-        nr_html += f"""<tr class="total">
-            <td class="b">TOTAL</td><td></td><td></td>
-            <td></td><td></td><td></td>
-            <td></td><td></td><td></td>
-            <td></td><td></td><td></td>
-            <td class="rb">{f3(total_metered)}</td>
-        </tr>"""
-        nr_html += "</tbody></table>"
-        nr_html += '<div class="section-footer">Source: Shift Closing Entry &rarr; Shift Closing Line (pivoted by nozzle)</div>'
-        parts.append(nr_html)
+        nr_rows = []
+        t_bill = t_amt = 0
+        for r in nr:
+            bq = flt(r.get("billable_qty", 0)); am = flt(r.get("amount", 0))
+            t_bill += bq; t_amt += am
+            nr_rows.append([
+                r.get("shift", ""), r.get("fuel_pump", ""), r.get("fuel_nozzle", ""),
+                r.get("item", ""), f3(r.get("opening", 0)), f3(r.get("closing", 0)),
+                f3(r.get("metered_qty", 0)), f3(r.get("test_qty", 0)),
+                f3(r.get("adjustment_qty", 0)), f3(bq), f2(r.get("rate", 0)), f2(am),
+            ])
+        parts.append(tbl(
+            ["Shift", "Pump", "Nozzle", "Item", "Opening", "Closing",
+             "Metered", "Test", "Adj.", "Billable", "Rate", "Amount"],
+            nr_rows, ["l", "l", "l", "l", "r", "r", "r", "r", "r", "r", "r", "r"],
+            total_row=["TOTAL", "", "", "", "", "", "", "", "", f3(t_bill), "", f2(t_amt)],
+            footer="Source: Shift Closing Entry &rarr; Shift Closing Line"
+        ))
     else:
         parts.append("<p><i>No shift closing entries found.</i></p>")
     parts.append('</div>')

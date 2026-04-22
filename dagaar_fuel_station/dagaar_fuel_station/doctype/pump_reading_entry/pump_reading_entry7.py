@@ -236,8 +236,8 @@ class PumpReadingEntry(Document):
             row.fuel_nozzle = snap.fuel_nozzle
             row.item = snap.item
             row.uom = snap.uom
-            row.rate = flt(row.rate) or flt(snap.rate)
-            row.base_rate = flt(row.rate) * flt(self.conversion_rate)
+            row.rate = snap.rate
+            row.base_rate = snap.base_rate
             row.amount = flt(row.qty) * flt(row.rate)
             row.amount_home = flt(row.amount) * flt(self.conversion_rate)
             row.discount_amount = flt(row.discount_amount)

@@ -81,11 +81,10 @@ def execute(filters=None):
     gap()
 
     # ── 2. Stock Balance ──
-    heading("2. Stock Balance by Warehouse", ["Item", "Warehouse", "UOM", "Opening Qty", "In Qty", "Out Qty", "Balance Qty"])
+    heading("2. Stock Balance by Warehouse", ["Item", "Warehouse", "Qty", "UOM", "Val. Rate", "Stock Value"])
     for r in ctx["stock_balance"]:
-        add_row([r["item_code"], r["warehouse"], r.get("stock_uom", ""),
-                 f3(r.get("opening_qty", 0)), f3(r.get("in_qty", 0)),
-                 f3(r.get("out_qty", 0)), f3(r.get("balance_qty", 0))])
+        add_row([r["item_code"], r["warehouse"], f3(r["actual_qty"]),
+                 r.get("stock_uom", ""), f2(r.get("valuation_rate", 0)), f2(r.get("stock_value", 0))])
     gap()
 
     # ── 3. Nozzle Readings (pivoted) ──
@@ -320,8 +319,19 @@ def _build_report_context(filters):
         {"label": "Cash Over/Short",                        "formatted": _f(cash_over_short),         "amount": cash_over_short},
     ]
 
-    # ── 2. STOCK BALANCE (uses ERPNext's own Stock Balance report) ──
-    stock_balance = _get_stock_balance(p, company)
+    # ── 2. STOCK BALANCE ─────────────────────
+    # Only show warehouses that are actually assigned to fuel nozzles
+    stock_balance = frappe.db.sql("""
+        SELECT bin.item_code, bin.warehouse, bin.actual_qty,
+               bin.stock_uom, bin.valuation_rate, bin.stock_value
+        FROM `tabBin` bin
+        WHERE bin.actual_qty != 0
+          AND bin.warehouse IN (
+              SELECT DISTINCT fn.warehouse FROM `tabFuel Nozzle` fn
+              WHERE IFNULL(fn.warehouse, '') != ''
+          )
+        ORDER BY bin.warehouse, bin.item_code
+    """, as_dict=True)
 
     # ── 3. NOZZLE READINGS (pivoted: one row per nozzle, shifts horizontal) ──
     _raw_nozzle = frappe.db.sql("""
@@ -460,100 +470,6 @@ def _build_report_context(filters):
         "payment_entries": payment_entries,
         "trial_balance": trial_balance,
     }
-
-
-def _get_stock_balance(params, company):
-    """Fetch stock balance for ALL warehouses, all items, even if zero.
-
-    Strategy:
-    - tabBin gives the authoritative current balance for every item+warehouse
-      combo that has ever had stock (includes Stock Reconciliation, all doctypes).
-    - tabStock Ledger Entry gives In/Out movements within the selected date range.
-    - Opening = Balance − In + Out  (derived, always correct).
-
-    This guarantees Reserve tanks, transit warehouses, and anything with only
-    a Stock Reconciliation opening will appear.
-    """
-    co_sle = "AND sle.company = %(company)s" if company else ""
-
-    # Step 1: ALL item+warehouse from Bin (no filters — show everything)
-    bin_rows = frappe.db.sql("""
-        SELECT bin.item_code, bin.warehouse, bin.stock_uom, bin.actual_qty
-        FROM `tabBin` bin
-        ORDER BY bin.warehouse, bin.item_code
-    """, as_dict=True)
-
-    # Step 2: Period In/Out from SLE within date range
-    sle_rows = frappe.db.sql(f"""
-        SELECT
-            sle.item_code,
-            sle.warehouse,
-            SUM(CASE WHEN sle.actual_qty > 0 THEN sle.actual_qty ELSE 0 END) AS in_qty,
-            SUM(CASE WHEN sle.actual_qty < 0 THEN ABS(sle.actual_qty) ELSE 0 END) AS out_qty
-        FROM `tabStock Ledger Entry` sle
-        WHERE sle.is_cancelled = 0
-          AND sle.posting_date BETWEEN %(from_date)s AND %(to_date)s
-          {co_sle}
-        GROUP BY sle.item_code, sle.warehouse
-    """, params, as_dict=True)
-
-    # Step 3: SLE movements AFTER to_date (to derive balance as-of to_date from current Bin balance)
-    after_rows = frappe.db.sql(f"""
-        SELECT
-            sle.item_code,
-            sle.warehouse,
-            SUM(sle.actual_qty) AS after_qty
-        FROM `tabStock Ledger Entry` sle
-        WHERE sle.is_cancelled = 0
-          AND sle.posting_date > %(to_date)s
-          {co_sle}
-        GROUP BY sle.item_code, sle.warehouse
-    """, params, as_dict=True)
-
-    # Build lookup maps
-    sle_map = {}
-    for r in sle_rows:
-        sle_map[(r["item_code"], r["warehouse"])] = {
-            "in_qty": flt(r["in_qty"]),
-            "out_qty": flt(r["out_qty"]),
-        }
-
-    after_map = {}
-    for r in after_rows:
-        after_map[(r["item_code"], r["warehouse"])] = flt(r["after_qty"])
-
-    # Merge
-    results = []
-    for b in bin_rows:
-        key = (b["item_code"], b["warehouse"])
-        current_bin_qty = flt(b["actual_qty"])
-
-        # Balance as of to_date = current Bin qty minus anything that happened after to_date
-        balance_as_of_to_date = current_bin_qty - after_map.get(key, 0)
-
-        in_qty = sle_map.get(key, {}).get("in_qty", 0)
-        out_qty = sle_map.get(key, {}).get("out_qty", 0)
-
-        # Opening = Balance − In + Out
-        opening_qty = balance_as_of_to_date - in_qty + out_qty
-
-        row = {
-            "item_code": b["item_code"],
-            "warehouse": b["warehouse"],
-            "stock_uom": b.get("stock_uom", ""),
-            "opening_qty": flt(opening_qty, 3),
-            "in_qty": flt(in_qty, 3),
-            "out_qty": flt(out_qty, 3),
-            "balance_qty": flt(balance_as_of_to_date, 3),
-        }
-
-        # Skip rows where everything is zero (removes irrelevant item+warehouse combos)
-        if not (row["opening_qty"] or row["in_qty"] or row["out_qty"] or row["balance_qty"]):
-            continue
-
-        results.append(row)
-
-    return results
 
 
 def _get_cash_trial_balance(params, company):
@@ -714,25 +630,24 @@ def _render_html(ctx, filters):
     #  2. STOCK BALANCE
     # ═══════════════════════════════════════════
     parts.append('<div class="section">')
-    parts.append('<div class="section-title">2. Stock Balance by Warehouse</div>')
+    parts.append('<div class="section-title">2. Stock Balance by Warehouse (Ceelka Shidaalka)</div>')
     sb = ctx["stock_balance"]
     if sb:
         sb_rows = []
-        t_open = t_in = t_out = t_bal = 0
+        t_q = t_v = 0
         for r in sb:
-            oq = flt(r.get("opening_qty", 0)); iq = flt(r.get("in_qty", 0))
-            oq2 = flt(r.get("out_qty", 0)); bq = flt(r.get("balance_qty", 0))
-            t_open += oq; t_in += iq; t_out += oq2; t_bal += bq
-            sb_rows.append([r["item_code"], r["warehouse"], r.get("stock_uom", ""),
-                            f3(oq), f3(iq), f3(oq2), f3(bq)])
+            q = flt(r["actual_qty"]); v = flt(r.get("stock_value", 0))
+            t_q += q; t_v += v
+            sb_rows.append([r["item_code"], r["warehouse"], f3(q),
+                            r.get("stock_uom", ""), f2(r.get("valuation_rate", 0)), f2(v)])
         parts.append(tbl(
-            ["Item", "Warehouse", "UOM", "Opening Qty", "In Qty", "Out Qty", "Balance Qty"],
-            sb_rows, ["l", "l", "l", "r", "r", "r", "r"],
-            total_row=["TOTAL", "", "", f3(t_open), f3(t_in), f3(t_out), f3(t_bal)],
-            footer="Source: Stock Ledger Entry – all warehouses, filtered by report date range"
+            ["Item", "Warehouse", "Qty", "UOM", "Val. Rate", "Stock Value"],
+            sb_rows, ["l", "l", "r", "l", "r", "r"],
+            total_row=["TOTAL", "", f3(t_q), "", "", f2(t_v)],
+            footer="Source: Bin (Stock Ledger) – Fuel station and nozzle warehouses"
         ))
     else:
-        parts.append("<p><i>No stock movements found.</i></p>")
+        parts.append("<p><i>No stock found in fuel warehouses.</i></p>")
     parts.append('</div>')
 
     # ═══════════════════════════════════════════

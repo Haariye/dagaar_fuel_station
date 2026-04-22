@@ -97,45 +97,19 @@ def convert_amount(amount, from_currency, to_currency, posting_date=None):
     return flt(amount) * flt(get_exchange_rate_safe(from_currency, to_currency, posting_date))
 
 
-def get_customer_price_list(customer=None, pos_profile=None):
-    if customer:
-        customer_price_list = frappe.db.get_value("Customer", customer, "default_price_list")
-        if customer_price_list:
-            return customer_price_list
-        customer_group = frappe.db.get_value("Customer", customer, "customer_group")
-        if customer_group:
-            group_price_list = frappe.db.get_value("Customer Group", customer_group, "default_price_list")
-            if group_price_list:
-                return group_price_list
-    return get_pos_price_list(pos_profile)
-
-
-@frappe.whitelist()
-def get_item_rate(item_code, price_list=None, uom=None, customer=None, company=None, posting_date=None, target_currency=None, pos_profile=None):
-    resolved_price_list = price_list or get_customer_price_list(customer=customer, pos_profile=pos_profile)
-    if not item_code or not resolved_price_list:
+def get_item_rate(item_code, price_list, uom=None, customer=None, company=None, posting_date=None, target_currency=None):
+    if not item_code or not price_list:
         return 0
     posting_date = posting_date or nowdate()
-    filters = {"item_code": item_code, "price_list": resolved_price_list, "selling": 1}
+    filters = {"item_code": item_code, "price_list": price_list, "selling": 1}
     if uom:
         filters["uom"] = uom
     rate = frappe.db.get_value("Item Price", filters, "price_list_rate")
     if rate is None and uom:
         filters.pop("uom", None)
         rate = frappe.db.get_value("Item Price", filters, "price_list_rate")
-    if rate is None and price_list != get_pos_price_list(pos_profile):
-        fallback_price_list = get_pos_price_list(pos_profile)
-        if fallback_price_list and fallback_price_list != resolved_price_list:
-            fallback_filters = {"item_code": item_code, "price_list": fallback_price_list, "selling": 1}
-            if uom:
-                fallback_filters["uom"] = uom
-            rate = frappe.db.get_value("Item Price", fallback_filters, "price_list_rate")
-            if rate is None and uom:
-                fallback_filters.pop("uom", None)
-                rate = frappe.db.get_value("Item Price", fallback_filters, "price_list_rate")
-            resolved_price_list = fallback_price_list if rate is not None else resolved_price_list
     rate = flt(rate)
-    price_list_currency = get_price_list_currency(resolved_price_list)
+    price_list_currency = get_price_list_currency(price_list)
     target_currency = target_currency or price_list_currency
     if price_list_currency and target_currency and price_list_currency != target_currency:
         rate = convert_amount(rate, price_list_currency, target_currency, posting_date)
