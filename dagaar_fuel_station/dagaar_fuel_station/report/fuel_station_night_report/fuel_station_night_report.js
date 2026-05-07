@@ -31,20 +31,30 @@ frappe.query_reports['Fuel Station Night Report'] = {
             label: __('Company'),
             fieldtype: 'Link',
             options: 'Company',
-            default: frappe.defaults.get_user_default('Company')
+            default: frappe.defaults.get_user_default('Company'),
+            reqd: 1,
+            on_change: function () {
+                frappe.query_report.set_filter_value('pos_profile', '');
+                frappe.query_report.set_filter_value('owner', []);
+            }
         },
         {
             fieldname: 'pos_profile',
             label: __('POS Profile / Station'),
             fieldtype: 'Link',
-            options: 'POS Profile'
+            options: 'POS Profile',
+            get_query: function () {
+                var company = frappe.query_report.get_filter_value('company');
+                return { filters: { company: company } };
+            }
         },
         {
             fieldname: 'owner',
             label: __('Created By'),
-            fieldtype: 'Link',
-            options: 'User',
-            default: 'All'
+            fieldtype: 'MultiSelectList',
+            get_data: function (txt) {
+                return frappe.db.get_link_options('User', txt);
+            }
         }
     ],
     onload: function(report) {

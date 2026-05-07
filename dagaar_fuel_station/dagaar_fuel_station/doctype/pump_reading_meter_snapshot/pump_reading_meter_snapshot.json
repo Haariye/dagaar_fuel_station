@@ -129,6 +129,7 @@
    "fieldname": "rate",
    "fieldtype": "Currency",
    "label": "Rate",
+   "precision": "9",
    "read_only": 1
   },
   {
@@ -142,6 +143,7 @@
    "fieldname": "amount",
    "fieldtype": "Currency",
    "label": "Amount",
+   "precision": "9",
    "read_only": 1
   },
   {
@@ -162,12 +164,13 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-03-30 22:41:07.318567",
- "modified_by": "Administrator",
+ "modified": "2026-05-02 17:20:05.092384",
+ "modified_by": "sysadmin@dagaarsoft.app",
  "module": "Dagaar Fuel Station",
  "name": "Pump Reading Meter Snapshot",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

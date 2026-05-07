@@ -90,6 +90,7 @@
    "fieldname": "rate",
    "fieldtype": "Currency",
    "label": "Rate",
+   "precision": "9",
    "read_only": 1
   },
   {
@@ -104,6 +105,7 @@
    "fieldname": "cash_amount",
    "fieldtype": "Currency",
    "label": "Cash Amount",
+   "precision": "9",
    "read_only": 1
   },
   {
@@ -161,12 +163,13 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-03-30 22:44:50.626522",
- "modified_by": "Administrator",
+ "modified": "2026-05-02 17:21:54.614668",
+ "modified_by": "sysadmin@dagaarsoft.app",
  "module": "Dagaar Fuel Station",
  "name": "Pump Reading Cash Summary",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

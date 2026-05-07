@@ -45,6 +45,7 @@
    "fieldname": "pos_profile",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "POS Profile",
    "options": "POS Profile",
    "reqd": 1
@@ -83,7 +84,7 @@
   }
  ],
  "links": [],
- "modified": "2026-03-14 01:24:40.558016",
+ "modified": "2026-04-29 23:44:01.803197",
  "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
  "name": "Fuel Pump",

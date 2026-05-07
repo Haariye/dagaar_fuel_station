@@ -222,9 +222,33 @@ def _normalise_filters(filters):
         filters["from_time"] = "00:00:00"
     if not filters.get("to_time"):
         filters["to_time"] = "23:59:59"
-    if not filters.get("owner"):
-        filters["owner"] = "All"
+
+    # Owner: multiselect list — parse JSON if string
+    owner = filters.get("owner")
+    if isinstance(owner, str):
+        try:
+            owner = frappe.parse_json(owner)
+        except Exception:
+            owner = [owner] if owner and owner != "All" else []
+    if not owner:
+        owner = []
+    filters["owner"] = owner
+
     return filters
+
+
+def _get_companies(company):
+    """If company is a parent (group), return it + all descendants. Otherwise just [company]."""
+    if not company:
+        return []
+    is_group = frappe.get_cached_value("Company", company, "is_group")
+    if is_group:
+        descendants = frappe.db.sql("""
+            SELECT name FROM `tabCompany` WHERE lft >= (SELECT lft FROM `tabCompany` WHERE name=%(company)s)
+            AND rgt <= (SELECT rgt FROM `tabCompany` WHERE name=%(company)s)
+        """, {"company": company}, as_list=True)
+        return [d[0] for d in descendants] if descendants else [company]
+    return [company]
 
 
 def _dt_between(alias, date_f="posting_date", time_f=None):
@@ -237,8 +261,12 @@ def _dt_between(alias, date_f="posting_date", time_f=None):
     return f"{alias}.{date_f} BETWEEN %(from_date)s AND %(to_date)s"
 
 
-def _owner_cond(alias):
-    return f"AND (%(owner)s = 'All' OR {alias}.owner = %(owner)s)"
+def _owner_cond(alias, owners):
+    """Build owner filter for multiselect. Empty list = no filter."""
+    if not owners:
+        return ""
+    placeholders = ", ".join([f"'{o}'" for o in owners])
+    return f"AND {alias}.owner IN ({placeholders})"
 
 
 # ══════════════════════════════════════════════════════════
@@ -249,25 +277,49 @@ def _build_report_context(filters):
     p = dict(filters)
     company = filters.get("company")
     pos_profile = filters.get("pos_profile")
+    owners = filters.get("owner", [])
 
-    co_si = "AND si.company = %(company)s" if company else ""
-    co_pe = "AND pe.company = %(company)s" if company else ""
-    co_je = "AND je.company = %(company)s" if company else ""
-    pos   = "AND si.pos_profile_link = %(pos_profile)s" if pos_profile else ""
-    ow_si = _owner_cond("si")
-    ow_pe = _owner_cond("pe")
-    ow_je = _owner_cond("je")
-    dt_si = _dt_between("si", "posting_date", "posting_time")
-    dt_pe = _dt_between("pe", "posting_date", "posting_time")
-    dt_je = _dt_between("je", "posting_date", "posting_time")
+    if not company:
+        frappe.throw("Company is mandatory")
+
+    # Company hierarchy: parent company = all children; normal = just that company
+    companies = _get_companies(company)
+    co_list = ", ".join([f"'{c}'" for c in companies])
+
+    # Build condition fragments
+    co_si  = f"AND si.company IN ({co_list})"
+    co_pe  = f"AND pe.company IN ({co_list})"
+    co_je  = f"AND je.company IN ({co_list})"
+    pos    = "AND si.pos_profile_link = %(pos_profile)s" if pos_profile else ""
+    pos_pre = "AND pre.pos_profile = %(pos_profile)s" if pos_profile else ""
+    pos_sce = "AND sce.pos_profile = %(pos_profile)s" if pos_profile else ""
+    ow_si  = _owner_cond("si", owners)
+    ow_pe  = _owner_cond("pe", owners)
+    ow_je  = _owner_cond("je", owners)
+    ow_pre = _owner_cond("pre", owners)
+    dt_si  = _dt_between("si", "posting_date", "posting_time")
+    dt_pe  = _dt_between("pe", "posting_date", "posting_time")
+    dt_je  = _dt_between("je", "posting_date", "posting_time")
 
     currency = _get_currency(company)
 
-    # ── 1. CASH ACTIVITY ─────────────────────
+    # ── Item group filter ──
+    fuel_item_groups = "('Service', 'Oils', 'Diesel', 'Petrol')"
+    si_has_fuel = f"""AND EXISTS (
+        SELECT 1 FROM `tabSales Invoice Item` _sii
+        INNER JOIN `tabItem` _itm ON _itm.name = _sii.item_code
+        WHERE _sii.parent = si.name AND _itm.item_group IN {fuel_item_groups}
+    )"""
+
+    # Nozzle filter by company + pos
+    nozzle_co  = f"fn.company IN ({co_list})"
+    nozzle_pos = "AND fn.pos_profile = %(pos_profile)s" if pos_profile else ""
+
+    # ── 1. CASH ACTIVITY ──
     total_sales = flt(_scalar(f"""
         SELECT IFNULL(SUM(si.base_grand_total),0) FROM `tabSales Invoice` si
         WHERE si.docstatus=1 AND si.status NOT IN ('Draft','Cancelled')
-        AND si.is_return=0 AND {dt_si} {co_si} {pos} {ow_si}""", p))
+        AND si.is_return=0 AND {dt_si} {co_si} {pos} {ow_si} {si_has_fuel}""", p))
 
     total_payments = flt(_scalar(f"""
         SELECT IFNULL(SUM(pe.base_paid_amount),0) FROM `tabPayment Entry` pe
@@ -278,14 +330,14 @@ def _build_report_context(filters):
         SELECT IFNULL(SUM(si.base_grand_total),0) FROM `tabSales Invoice` si
         WHERE si.docstatus=1 AND si.status NOT IN ('Draft','Cancelled')
         AND si.is_return=0 AND IFNULL(si.outstanding_amount,0)>=IFNULL(si.grand_total,0)
-        AND {dt_si} {co_si} {pos} {ow_si}""", p))
+        AND {dt_si} {co_si} {pos} {ow_si} {si_has_fuel}""", p))
 
     partially_unpaid = flt(_scalar(f"""
         SELECT IFNULL(SUM(si.outstanding_amount),0) FROM `tabSales Invoice` si
         WHERE si.docstatus=1 AND si.status NOT IN ('Draft','Cancelled')
         AND si.is_return=0 AND IFNULL(si.outstanding_amount,0)>0
         AND IFNULL(si.outstanding_amount,0)<IFNULL(si.grand_total,0)
-        AND {dt_si} {co_si} {pos} {ow_si}""", p))
+        AND {dt_si} {co_si} {pos} {ow_si} {si_has_fuel}""", p))
 
     journal_debits = flt(_scalar(f"""
         SELECT IFNULL(SUM(jea.debit),0) FROM `tabJournal Entry` je
@@ -295,12 +347,15 @@ def _build_report_context(filters):
     total_litres = flt(_scalar(f"""
         SELECT IFNULL(SUM(sii.qty),0) FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si ON si.name=sii.parent
+        INNER JOIN `tabItem` itm ON itm.name=sii.item_code
         WHERE si.docstatus=1 AND si.status NOT IN ('Draft','Cancelled')
-        AND si.is_return=0 AND {dt_si} {co_si} {pos} {ow_si}""", p))
+        AND si.is_return=0 AND itm.item_group IN {fuel_item_groups}
+        AND {dt_si} {co_si} {pos} {ow_si}""", p))
 
-    cash_over_short = flt(_scalar("""
+    cash_over_short = flt(_scalar(f"""
         SELECT IFNULL(SUM(pre.cash_over_short),0) FROM `tabPump Reading Entry` pre
-        WHERE pre.docstatus=1 AND pre.date BETWEEN %(from_date)s AND %(to_date)s""", p))
+        WHERE pre.docstatus=1 AND pre.date BETWEEN %(from_date)s AND %(to_date)s
+        AND pre.company IN ({co_list}) {pos_pre} {ow_pre}""", p))
 
     total_activity = total_sales + total_payments - journal_debits
     available_for_deposit = total_sales - credit_sales_total - partially_unpaid + total_payments - journal_debits
@@ -320,57 +375,49 @@ def _build_report_context(filters):
         {"label": "Cash Over/Short",                        "formatted": _f(cash_over_short),         "amount": cash_over_short},
     ]
 
-    # ── 2. STOCK BALANCE (uses ERPNext's own Stock Balance report) ──
-    stock_balance = _get_stock_balance(p, company)
+    # ── 2. STOCK BALANCE (company-specific warehouses) ──
+    stock_balance = _get_stock_balance(p, companies)
 
-    # ── 3. NOZZLE READINGS (pivoted: one row per nozzle, shifts horizontal) ──
-    _raw_nozzle = frappe.db.sql("""
+    # ── 3. NOZZLE READINGS (company + pos filtered nozzles) ──
+    _raw_nozzle = frappe.db.sql(f"""
         SELECT scl.fuel_nozzle, scl.fuel_pump, scl.item,
                scl.opening_reading AS opening, scl.closing_reading AS closing,
                scl.metered_qty, sce.shift
         FROM `tabShift Closing Line` scl
         INNER JOIN `tabShift Closing Entry` sce ON sce.name=scl.parent
         WHERE sce.docstatus=1 AND sce.date BETWEEN %(from_date)s AND %(to_date)s
+          AND sce.company IN ({co_list}) {pos_sce}
+          AND scl.fuel_nozzle IN (
+              SELECT fn.name FROM `tabFuel Nozzle` fn WHERE {nozzle_co} {nozzle_pos}
+          )
         ORDER BY scl.fuel_pump, scl.fuel_nozzle, FIELD(sce.shift, 'Morning', 'Evening', 'Night')
     """, p, as_dict=True)
 
-    # Pivot: group by nozzle, spread shifts horizontally
     from collections import OrderedDict
     _nozzle_map = OrderedDict()
     for r in _raw_nozzle:
         key = r.get("fuel_nozzle", "")
         if key not in _nozzle_map:
             _nozzle_map[key] = {
-                "fuel_nozzle": key,
-                "fuel_pump": r.get("fuel_pump", ""),
-                "item": r.get("item", ""),
+                "fuel_nozzle": key, "fuel_pump": r.get("fuel_pump", ""), "item": r.get("item", ""),
                 "morning_open": 0, "morning_close": 0, "morning_metered": 0,
                 "evening_open": 0, "evening_close": 0, "evening_metered": 0,
-                "night_open": 0, "night_close": 0, "night_metered": 0,
-                "total_metered": 0,
+                "night_open": 0, "night_close": 0, "night_metered": 0, "total_metered": 0,
             }
         shift = cstr(r.get("shift", "")).strip()
         metered = flt(r.get("metered_qty", 0))
         opening = flt(r.get("opening", 0))
         closing = flt(r.get("closing", 0))
-
         if shift == "Morning":
-            _nozzle_map[key]["morning_open"] = opening
-            _nozzle_map[key]["morning_close"] = closing
-            _nozzle_map[key]["morning_metered"] = metered
+            _nozzle_map[key]["morning_open"] = opening; _nozzle_map[key]["morning_close"] = closing; _nozzle_map[key]["morning_metered"] = metered
         elif shift == "Evening":
-            _nozzle_map[key]["evening_open"] = opening
-            _nozzle_map[key]["evening_close"] = closing
-            _nozzle_map[key]["evening_metered"] = metered
+            _nozzle_map[key]["evening_open"] = opening; _nozzle_map[key]["evening_close"] = closing; _nozzle_map[key]["evening_metered"] = metered
         elif shift == "Night":
-            _nozzle_map[key]["night_open"] = opening
-            _nozzle_map[key]["night_close"] = closing
-            _nozzle_map[key]["night_metered"] = metered
+            _nozzle_map[key]["night_open"] = opening; _nozzle_map[key]["night_close"] = closing; _nozzle_map[key]["night_metered"] = metered
         _nozzle_map[key]["total_metered"] += metered
-
     nozzle_readings = list(_nozzle_map.values())
 
-    # ── 4. CREDIT SALES ──────────────────────
+    # ── 4. CREDIT SALES ──
     credit_sales = frappe.db.sql(f"""
         SELECT si.name AS invoice, si.customer, si.posting_date,
                si.grand_total, si.outstanding_amount, si.currency,
@@ -378,24 +425,26 @@ def _build_report_context(filters):
         FROM `tabSales Invoice` si
         WHERE si.docstatus=1 AND si.status NOT IN ('Draft','Cancelled')
           AND si.is_return=0 AND IFNULL(si.paid_amount,0)=0
-          AND {dt_si} {co_si} {pos} {ow_si}
+          AND {dt_si} {co_si} {pos} {ow_si} {si_has_fuel}
         ORDER BY si.customer, si.name
     """, p, as_dict=True)
 
-    # ── 5. SALES BY ITEM ─────────────────────
+    # ── 5. SALES BY ITEM ──
     sales_by_item = frappe.db.sql(f"""
         SELECT sii.item_code, sii.item_name, sii.stock_uom AS uom,
                SUM(sii.qty) AS qty, AVG(sii.rate) AS avg_rate, SUM(sii.amount) AS amount
         FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si ON si.name=sii.parent
+        INNER JOIN `tabItem` itm ON itm.name=sii.item_code
         WHERE si.docstatus=1 AND si.status NOT IN ('Draft','Cancelled')
-          AND si.is_return=0 AND {dt_si} {co_si} {pos} {ow_si}
+          AND si.is_return=0 AND itm.item_group IN {fuel_item_groups}
+          AND {dt_si} {co_si} {pos} {ow_si}
         GROUP BY sii.item_code, sii.item_name, sii.stock_uom
         ORDER BY SUM(sii.amount) DESC
     """, p, as_dict=True)
 
-    # ── 6. SHIFT PERFORMANCE ─────────────────
-    shift_performance = frappe.db.sql("""
+    # ── 6. SHIFT PERFORMANCE ──
+    shift_performance = frappe.db.sql(f"""
         SELECT pre.shift, pre.attendant, pre.pos_profile,
                pre.total_metered_qty AS metered_qty, pre.total_billable_qty AS billable_qty,
                pre.total_credit_qty AS credit_qty, pre.total_cash_qty AS cash_qty,
@@ -403,10 +452,11 @@ def _build_report_context(filters):
                pre.total_amount, pre.actual_cash_received, pre.cash_over_short
         FROM `tabPump Reading Entry` pre
         WHERE pre.docstatus=1 AND pre.date BETWEEN %(from_date)s AND %(to_date)s
+          AND pre.company IN ({co_list}) {pos_pre} {ow_pre}
         ORDER BY pre.shift
     """, p, as_dict=True)
 
-    # ── 7. AR AGING ──────────────────────────
+    # ── 7. AR AGING ──
     ar_aging = frappe.db.sql(f"""
         SELECT si.customer,
             SUM(CASE WHEN DATEDIFF(%(to_date)s,si.due_date)<=0 THEN si.outstanding_amount ELSE 0 END) AS current_amt,
@@ -416,12 +466,13 @@ def _build_report_context(filters):
             SUM(CASE WHEN DATEDIFF(%(to_date)s,si.due_date)>90 THEN si.outstanding_amount ELSE 0 END) AS over_90,
             SUM(si.outstanding_amount) AS total_outstanding
         FROM `tabSales Invoice` si
-        WHERE si.docstatus=1 AND si.outstanding_amount>0 AND si.is_return=0 {co_si}
+        WHERE si.docstatus=1 AND si.outstanding_amount>0 AND si.is_return=0
+          {co_si} {pos} {ow_si} {si_has_fuel}
         GROUP BY si.customer ORDER BY SUM(si.outstanding_amount) DESC LIMIT 30
     """, p, as_dict=True)
 
-    # ── 8. CASH OVER/SHORT ───────────────────
-    cash_analysis = frappe.db.sql("""
+    # ── 8. CASH OVER/SHORT ──
+    cash_analysis = frappe.db.sql(f"""
         SELECT pre.shift, pre.attendant, emp.employee_name AS attendant_name,
                pre.total_cash_amount AS expected_cash,
                pre.actual_cash_received, pre.cash_over_short,
@@ -429,10 +480,11 @@ def _build_report_context(filters):
         FROM `tabPump Reading Entry` pre
         LEFT JOIN `tabEmployee` emp ON emp.name=pre.attendant
         WHERE pre.docstatus=1 AND pre.date BETWEEN %(from_date)s AND %(to_date)s
+          AND pre.company IN ({co_list}) {pos_pre} {ow_pre}
         ORDER BY pre.shift
     """, p, as_dict=True)
 
-    # ── 9. PAYMENT ENTRIES ───────────────────
+    # ── 9. PAYMENT ENTRIES ──
     payment_entries = frappe.db.sql(f"""
         SELECT pe.name, pe.party, pe.party_name, pe.mode_of_payment,
                pe.paid_amount, pe.base_paid_amount, pe.posting_date,
@@ -443,8 +495,8 @@ def _build_report_context(filters):
         ORDER BY pe.posting_date, pe.name
     """, p, as_dict=True)
 
-    # ── 10. CASH-TYPE ACCOUNTS TRIAL BALANCE ─
-    trial_balance = _get_cash_trial_balance(p, company)
+    # ── 10. TRIAL BALANCE ──
+    trial_balance = _get_cash_trial_balance(p, companies)
 
     return {
         "currency": currency,
@@ -462,24 +514,20 @@ def _build_report_context(filters):
     }
 
 
-def _get_stock_balance(params, company):
-    """Fetch stock balance for ALL warehouses, all items, even if zero.
+def _get_stock_balance(params, companies):
+    """Fetch stock balance for warehouses belonging to selected companies."""
+    co_list = ", ".join([f"'{c}'" for c in companies])
+    co_sle = f"AND sle.company IN ({co_list})"
 
-    Strategy:
-    - tabBin gives the authoritative current balance for every item+warehouse
-      combo that has ever had stock (includes Stock Reconciliation, all doctypes).
-    - tabStock Ledger Entry gives In/Out movements within the selected date range.
-    - Opening = Balance − In + Out  (derived, always correct).
-
-    This guarantees Reserve tanks, transit warehouses, and anything with only
-    a Stock Reconciliation opening will appear.
-    """
-    co_sle = "AND sle.company = %(company)s" if company else ""
-
-    # Step 1: ALL item+warehouse from Bin (no filters — show everything)
-    bin_rows = frappe.db.sql("""
+    # Step 1: item+warehouse from Bin — Fuel Station warehouses for selected companies
+    bin_rows = frappe.db.sql(f"""
         SELECT bin.item_code, bin.warehouse, bin.stock_uom, bin.actual_qty
         FROM `tabBin` bin
+        INNER JOIN `tabWarehouse` wh ON wh.name = bin.warehouse
+        INNER JOIN `tabItem` itm ON itm.name = bin.item_code
+        WHERE IFNULL(wh.warehouse_type, '') = 'Fuel Station'
+          AND wh.company IN ({co_list})
+          AND itm.item_group IN ('Service', 'Oils', 'Diesel', 'Petrol')
         ORDER BY bin.warehouse, bin.item_code
     """, as_dict=True)
 
@@ -537,7 +585,7 @@ def _get_stock_balance(params, company):
         # Opening = Balance − In + Out
         opening_qty = balance_as_of_to_date - in_qty + out_qty
 
-        row = {
+        results.append({
             "item_code": b["item_code"],
             "warehouse": b["warehouse"],
             "stock_uom": b.get("stock_uom", ""),
@@ -545,20 +593,15 @@ def _get_stock_balance(params, company):
             "in_qty": flt(in_qty, 3),
             "out_qty": flt(out_qty, 3),
             "balance_qty": flt(balance_as_of_to_date, 3),
-        }
-
-        # Skip rows where everything is zero (removes irrelevant item+warehouse combos)
-        if not (row["opening_qty"] or row["in_qty"] or row["out_qty"] or row["balance_qty"]):
-            continue
-
-        results.append(row)
+        })
 
     return results
 
 
-def _get_cash_trial_balance(params, company):
-    """Trial balance for accounts with account_type = 'Cash' or root_type in Cash-like."""
-    co = "AND gl.company = %(company)s" if company else ""
+def _get_cash_trial_balance(params, companies):
+    """Trial balance for accounts with account_type = 'Cash'."""
+    co_list = ", ".join([f"'{c}'" for c in companies])
+    co = f"AND gl.company IN ({co_list})"
     # Opening balance: everything before from_date
     # Period: between from_date and to_date
     rows = frappe.db.sql(f"""

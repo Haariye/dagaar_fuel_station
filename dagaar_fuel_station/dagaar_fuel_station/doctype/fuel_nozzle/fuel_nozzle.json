@@ -35,6 +35,7 @@
    "fieldname": "fuel_pump",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Fuel Pump",
    "options": "Fuel Pump",
    "reqd": 1
@@ -49,6 +50,7 @@
   {
    "fieldname": "pos_profile",
    "fieldtype": "Link",
+   "in_standard_filter": 1,
    "label": "POS Profile",
    "options": "POS Profile",
    "reqd": 1
@@ -119,7 +121,7 @@
   }
  ],
  "links": [],
- "modified": "2026-03-14 01:26:48.144837",
+ "modified": "2026-04-29 23:50:00.672612",
  "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
  "name": "Fuel Nozzle",
