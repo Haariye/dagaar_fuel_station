@@ -77,7 +77,6 @@
   {
    "fieldname": "company",
    "fieldtype": "Link",
-   "hidden": 1,
    "in_list_view": 1,
    "label": "Company",
    "options": "Company"
@@ -126,11 +125,11 @@
    "read_only": 1
   },
   {
+   "default": "1",
    "fieldname": "conversion_rate",
    "fieldtype": "Float",
    "label": "Exchange Rate",
-   "precision": "9",
-   "default": "1"
+   "precision": "9"
   },
   {
    "fieldname": "opening_cash_float",
@@ -279,8 +278,8 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-16 22:50:56.943381",
- "modified_by": "sysadmin@naleye.dagaarsoft.app",
+ "modified": "2026-05-07 22:06:18.414871",
+ "modified_by": "Administrator",
  "module": "Dagaar Fuel Station",
  "name": "Shift Closing Entry",
  "naming_rule": "By \"Naming Series\" field",
